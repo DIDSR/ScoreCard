@@ -8,12 +8,7 @@
 
 ## Overview
 
-**`SMD ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data, as introduced in:
-
-> Zamzmi, G., Subbaswamy, A., Sizikova, E., Margerrison, E., Delfino, J. G., & Badano, A. (2025).
-> *Scorecard for synthetic medical data evaluation.*
-> Communications Engineering, 4, 130.
-> https://doi.org/10.1038/s44172-025-00450-1
+**`SMD ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data.
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
