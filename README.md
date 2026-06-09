@@ -1,5 +1,5 @@
 <p align="center">
- <h1 align="center">ScoreCard: A Data Quality Evaluation Toolbox for Synthetic Medical Data</h1>
+ <h1 align="center">GenAI ScoreCard: A Data Quality Evaluation Toolbox for Synthetic Medical Data</h1>
 </p>
 
 <p align="center">
@@ -8,7 +8,7 @@
 
 ## Overview
 
-**`SMD ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data.
+**`GenAI ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data.
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
