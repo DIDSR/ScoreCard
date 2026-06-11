@@ -61,6 +61,6 @@ Clone this repository and navigate to the project directory:
 
 ## Contact
 
-For any inquiries, suggestions, or collaborative opportunities, please contact Seyed Kahaki, Elim Thompson, or Aldo Badano either via this GitHub repo or via email (seyed.kahaki@fda.hhs.gov, YeeLamElim.Thompson@fda.hhs.gov or Aldo.Badano@fda.hhs.gov).
+For any inquiries, suggestions, or collaborative opportunities, please contact Seyed Kahaki, Elim Thompson, or Aldo Badano (seyed.kahaki@fda.hhs.gov, yeelamelim.thompson@fda.hhs.gov, aldo.badano@fda.hhs.gov).
 
 ---
