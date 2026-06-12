@@ -59,8 +59,4 @@ In addition to quantitative evaluation, this toolbox supports generation of a st
 
 Clone this repository and navigate to the project directory:
 
-## Contact
-
-For any inquiries, suggestions, or collaborative opportunities, please contact Seyed Kahaki, Elim Thompson, or Aldo Badano (seyed.kahaki@fda.hhs.gov, yeelamelim.thompson@fda.hhs.gov, aldo.badano@fda.hhs.gov).
-
 ---
