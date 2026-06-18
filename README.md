@@ -55,9 +55,14 @@ In addition to quantitative evaluation, this toolbox supports generation of a st
 
 ## Getting Started
 
-### Installation
+### Installation & Startup
 
-Clone this repository and navigate to the project directory:
+- Clone this repository and navigate to the project directory
+
+- Ensure you are using ``` Python 3.12 ```
+- Install requirements: ``` pip install -r requirements.txt ```
+- Run the Flask application:  ``` python app.py ```
+- Navigate to: ``` http://localhost:5050 ```
 
 ---
 
