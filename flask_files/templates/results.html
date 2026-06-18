@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synth Card - Results Overview</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* ===== Collapsible Card Styles (kept for reference) ===== */
+        details.card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        details.card summary.card-header {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        details.card summary.card-header:hover {
+            background: #f1f5f9;
+        }
+
+        details.card summary.card-header::-webkit-details-marker,
+        details.card summary.card-header::marker {
+            display: none;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        details.card .card-step {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #e0e7ff;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            white-space: nowrap;
+        }
+
+        details.card .card-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .chevron {
+            font-size: 1rem;
+            color: #64748b;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 1rem;
+        }
+
+        details.card[open] .chevron {
+            transform: rotate(180deg);
+        }
+
+        details.card .card-body {
+            padding: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+        }
+
+        .figure-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ===== Analysis Navigation Cards (Overview Page) ===== */
+        .analysis-nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .analysis-nav-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .analysis-nav-card:hover {
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+            border-color: #6366f1;
+        }
+
+        .nav-card-header {
+            padding: 1.25rem 1.5rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-card-header .card-step {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #e0e7ff;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            white-space: nowrap;
+        }
+
+        .nav-card-header .card-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .nav-card-body {
+            padding: 1.5rem;
+        }
+
+        .nav-card-body p {
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0 0 1.25rem 0;
+        }
+
+        .nav-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .nav-link-text {
+            color: #4f46e5;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .analysis-nav-card:hover .nav-link-text {
+            color: #4338ca;
+        }
+
+        .results-page-title {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-wrapper">
+
+        <!-- ===== HEADER ===== -->
+        <header class="site-header">
+            <div class="header-left">
+                <span class="header-placeholder">Logo</span>
+            </div>
+            <div class="header-center">
+                <h1>Synth Card</h1>
+                <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
+            </div>
+            <div class="header-right">
+                <span class="header-placeholder"><a href="https://www.github.com/DIDSR/">github.com/DIDSR/</a></span>
+            </div>
+        </header>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+
+            <!-- Page title row -->
+            <div class="results-page-title">
+                <h2>Real & Synthetic Feature Extraction Results</h2>
+                <div class="results-job-row">
+                    <p class="results-job-id">Job ID: <code>{{ job_id }}</code></p>
+                    <a href="{{ url_for('download_results', job_id=job_id) }}" class="btn btn-primary">
+                        <span>💾</span> Download All Results
+                    </a>
+                </div>
+            </div>
+
+            <p style="max-width: 720px; color: #475569; margin-bottom: 1.5rem; font-size: 1.02rem;">
+                Analysis complete. Choose a report below to explore detailed visualizations comparing 
+                real and synthetic image patch features.
+            </p>
+
+            <!-- ===== Navigation Cards to Individual Analysis Pages ===== -->
+            <div class="analysis-nav-grid">
+
+                <!-- Histogram Analysis -->
+                <a href="{{ url_for('results_histogram', job_id=job_id) }}" class="analysis-nav-card">
+                    <div class="nav-card-header">
+                        <span class="card-step step-histogram">Histograms</span>
+                        <h3 class="card-title">Histogram Analysis</h3>
+                    </div>
+                    <div class="nav-card-body">
+                        <p>Visual comparison of feature value distributions between the real source dataset and the synthetic dataset.</p>
+                        <div class="nav-card-footer">
+                            <span class="nav-link-text">View Full Histogram Report →</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Coverage Analysis -->
+                <a href="{{ url_for('results_coverage', job_id=job_id) }}" class="analysis-nav-card">
+                    <div class="nav-card-header">
+                        <span class="card-step step-coverage">Coverage</span>
+                        <h3 class="card-title">Coverage Analysis</h3>
+                    </div>
+                    <div class="nav-card-body">
+                        <p>Analyze value distributions and measure deviation from reference.</p>
+                        <div class="nav-card-footer">
+                            <span class="nav-link-text">View Full Coverage Report →</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Congruence Analysis -->
+                <a href="{{ url_for('results_congruence', job_id=job_id) }}" class="analysis-nav-card">
+                    <div class="nav-card-header">
+                        <span class="card-step step-congruence">Congruence</span>
+                        <h3 class="card-title">Congruence Analysis</h3>
+                    </div>
+                    <div class="nav-card-body">
+                        <p>Analyze statistical similarity and congruence between real and synthetic feature sets.</p>
+                        <div class="nav-card-footer">
+                            <span class="nav-link-text">View Full Congruence Report →</span>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+
+            <!-- ===== Back to Home action ===== -->
+            <div class="card-actions results-back-action">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    <span>←</span> Back to Home
+                </a>
+            </div>
+
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="site-footer">
+            <div class="footer-left">
+                <span>2026 CDRH/OSEL/DIDSR</span>
+            </div>
+            <div class="footer-middle"></div>
+            <div class="footer-right">
+                <span>Contact: Alexander R. Webber <a href="mailto:alexander.webber@fda.hhs.gov">alexander.webber@fda.hhs.gov</a></span>
+            </div>
+        </footer>
+
+    </div><!-- end .page-wrapper -->
+
+</body>
+</html>

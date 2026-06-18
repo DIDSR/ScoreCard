@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synth Card</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- jQuery must be hosted locally at static/js/jquery-3.6.0.min.js -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+</head>
+<body>
+
+    <div class="page-wrapper">
+
+        <!-- ===== HEADER ===== -->
+        <header class="site-header">
+            <div class="header-left">
+                <!-- Left logo / text placeholder -->
+                <span class="header-placeholder">Logo</span>
+            </div>
+            <div class="header-center">
+                <h1>Synth Card</h1>
+                <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
+            </div>
+            <div class="header-right">
+                <!-- Right logo / text placeholder -->
+                <span class="header-placeholder"><a href="https://www.github.com/DIDSR/">github.com/DIDSR/</a></span>
+            </div>
+        </header>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message {{ category }}">
+                                <span>{{ message }}</span>
+                                <button class="close-btn" onclick="this.parentElement.remove()">✕</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- ===== CARD: Upload / Data Selection ===== -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-step">Step 1</span>
+                    <h2 class="card-title">Select Data Source</h2>
+                </div>
+                <div class="card-body">
+                    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+
+                        <div class="upload-options">
+                            <label class="radio-option">
+                                <input type="radio" name="upload_type" value="preset" checked onclick="toggleUploadFields()">
+                                <span class="radio-label">Preset Dataset</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="upload_type" value="directory" onclick="toggleUploadFields()">
+                                <span class="radio-label">Local Directory</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="upload_type" value="files" onclick="toggleUploadFields()">
+                                <span class="radio-label">Select Files</span>
+                            </label>
+                        </div>
+
+                        <div id="field-preset" class="upload-field upload-field-info">
+                            <span class="upload-icon">📂</span>
+                            <p>Using <code>data/real_patch_appearance.csv</code> and <code>data/static_patch_appearance.csv</code>, along with associated images.</p>
+                        </div>
+
+                        <div id="field-directory" class="upload-field" style="display:none;">
+                            <label class="field-label">Directory Path</label>
+                            <input
+                                type="text"
+                                name="dir_path"
+                                class="text-input"
+                                placeholder="Enter absolute path to directory (e.g., /home/user/data)">
+                        </div>
+
+                        <div id="field-files" class="upload-field" style="display:none;">
+                            <label class="field-label">Select Files</label>
+                            <div class="upload-area" onclick="document.getElementById('dicom-file-input').click()">
+                                <span class="upload-icon">🗂️</span>
+                                <span class="upload-text">Click to select DICOM or PNG files</span>
+                                <span class="upload-subtext">.dcm, .dicom or .png files accepted</span>
+                                <input id="dicom-file-input" type="file" name="dicom_files" multiple accept=".dcm,.dicom,.png"
+                                       style="display:none;" onchange="updateFileLabel(this)">
+                            </div>
+                            <p id="file-label" class="file-label-text" style="display:none;"></p>
+                        </div>
+
+                        <div class="card-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span>📥</span> Load Images
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+            <!-- END CARD: Upload -->
+
+            <!-- ===== CARD: Image Preview (conditional) ===== -->
+            {% if dataset_ready %}
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-step">Step 2</span>
+                    <h2 class="card-title">Image Previews</h2>
+                </div>
+                <div class="card-body">
+                    <p class="card-subtitle">Sample images from the selected dataset. Review before generating the report.</p>
+
+                    <!-- Real previews -->
+                    <!-- ========== REAL IMAGES ========== -->
+                    <div class="preview-section">
+                        <div class="preview-header">
+                            <h2 class="preview-title">
+                                <span class="badge-real">Real</span>
+                            </h2>
+                            <span class="preview-count">
+                                Showing <strong>{{ real_preview_images|length }}</strong> of <strong>{{ total_images }}</strong>
+                            </span>
+                        </div>
+                        
+                        <div class="preview-gallery">
+                            {% for img in real_preview_images %}
+                                <div class="preview-item">
+                                    <img src="{{ url_for('static', filename='uploads/' + img) }}" 
+                                        alt="Real preview {{ loop.index }}">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- ========== SYNTHETIC IMAGES ========== -->
+                    <div class="preview-section">
+                        <div class="preview-header">
+                            <h2 class="preview-title">
+                                <span class="badge-synth">Synthetic</span>
+                            </h2>
+                            <span class="preview-count">
+                                Showing <strong>{{ synth_preview_images|length }}</strong> of <strong>{{ total_synth_images }}</strong>
+                            </span>
+                        </div>
+                        
+                        <div class="preview-gallery">
+                            {% for img in synth_preview_images %}
+                                <div class="preview-item">
+                                    <img src="{{ url_for('static', filename='uploads/' + img) }}" 
+                                        alt="Synthetic preview {{ loop.index }}">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+            </div>
+
+            <!-- ===== CARD: Generate Report ===== -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-step">Step 3</span>
+                    <h2 class="card-title">Generate Report</h2>
+                </div>
+                <div class="card-body">
+                    <p class="card-subtitle">Run the SynthCard inference pipeline to generate congruence and coverage metrics.</p>
+
+                    <div class="card-actions">
+                        <button id="generate-btn" class="btn btn-success">
+                            <span>⚡</span> Generate Synthetic Analysis Report
+                        </button>
+                    </div>
+
+                    <div id="progress-container" style="display:none;">
+                        <div class="progress-track">
+                            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                        </div>
+                        <p id="progress-text" class="progress-label">Processing... 0%</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <!-- END conditional cards -->
+
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="site-footer">
+            <div class="footer-left">
+                <!-- Copyright placeholder -->
+                <span><strong>2026 CDRH/OSEL/DIDSR</strong></span>
+            </div>
+            <div class="footer-middle">
+                <!-- Center footer text placeholder -->
+            </div>
+            <div class="footer-right">
+                <!-- Contact placeholder -->
+                <span>Contact: Alexander R. Webber <a href="mailto:alexander.webber@fda.hhs.gov">alexander.webber@fda.hhs.gov</a></span>
+            </div>
+        </footer>
+
+    </div><!-- end .page-wrapper -->
+
+    <script>
+        function toggleUploadFields() {
+            const type = $('input[name="upload_type"]:checked').val();
+            $('.upload-field').hide();
+            $(`#field-${type}`).show();
+        }
+
+        function updateFileLabel(input) {
+            const label = document.getElementById('file-label');
+            if (input.files && input.files.length > 0) {
+                label.textContent = input.files.length + ' file(s) selected';
+                label.style.display = 'block';
+            } else {
+                label.style.display = 'none';
+            }
+        }
+
+        $('#generate-btn').click(function () {
+            const btn = $(this);
+            btn.prop('disabled', true).html('<span>⏳</span> Processing...');
+            $('#progress-container').show();
+
+            $.ajax({
+                url: '/generate_report',
+                type: 'POST',
+                success: function (response) {
+                    const jobId = response.job_id;
+
+                    const pollTimer = setInterval(function () {
+                        $.ajax({
+                            url: '/progress/' + jobId,
+                            type: 'GET',
+                            success: function (data) {
+                                if (data.status === 'completed') {
+                                    clearInterval(pollTimer);
+                                    $('#progress-bar-fill').css('width', '100%');
+                                    $('#progress-text').text('Processing... 100%');
+                                    setTimeout(function () {
+                                        window.location.href = '/results/' + jobId;
+                                    }, 300);
+                                } else if (data.status === 'error') {
+                                    clearInterval(pollTimer);
+                                    alert('Error: ' + data.error);
+                                    btn.prop('disabled', false).html('<span>⚡</span> Generate Synthetic Analysis Report');
+                                    $('#progress-container').hide();
+                                } else {
+                                    const progress = data.progress || 0;
+                                    $('#progress-bar-fill').css('width', progress + '%');
+                                    if (progress >= 100) {
+                                        $('#progress-text').text('Processing... 100% (Creating output figures)');
+                                    } else {
+                                        $('#progress-text').text('Processing... ' + progress + '%');
+                                    }
+                                }
+                            }
+                        });
+                    }, 1000);
+                },
+                error: function () {
+                    alert('An error occurred while starting the process.');
+                    btn.prop('disabled', false).html('Generate Synthetic Analysis Report');
+                    $('#progress-container').hide();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
