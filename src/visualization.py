@@ -243,3 +243,72 @@ def create_congruence_barplot(congruence_df: pd.DataFrame):
     fig.subplots_adjust(top=0.75)
 
     return fig
+
+# Add these two functions at the very end of visualization.py
+
+def create_completeness_barplot(comp_df: pd.DataFrame):
+    """Simple barplot for completeness metrics."""
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    metrics = ['Missing_Data_Percentage', 'Required_Fields_Completeness']
+    df_melt = comp_df.melt(id_vars='Dataset', value_vars=metrics,
+                           var_name='Metric', value_name='Value')
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    for ax, metric in zip(axes, metrics):
+        data = df_melt[df_melt['Metric'] == metric]
+        sns.barplot(data=data, x='Dataset', y='Value', ax=ax, palette='Set2', edgecolor='black')
+        ax.set_title(metric.replace('_', ' '), fontsize=13, fontweight='bold')
+        for container in ax.containers:
+            ax.bar_label(container, fmt='%.2f', padding=3, fontsize=10)
+
+    fig.suptitle('Completeness: Real vs Synthetic', fontsize=15, fontweight='bold', y=0.975)
+    fig.tight_layout()
+    return fig
+
+
+def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
+    """Barplot for consistency metrics including ANOVA F-statistic."""
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    if cons_df.empty:
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ax.text(0.5, 0.5, 'No consistency data available', ha='center', va='center', fontsize=14)
+        ax.axis('off')
+        return fig
+
+    metrics_to_plot = ['Variance_of_Group_Means', 'Max_Min_Difference', 'ANOVA_F_statistic']
+    
+    df_melt = cons_df.melt(
+        id_vars=['Metric'], 
+        value_vars=metrics_to_plot,
+        var_name='Consistency_Metric', 
+        value_name='Value'
+    )
+
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+    for ax, cmetric in zip(axes, metrics_to_plot):
+        data = df_melt[df_melt['Consistency_Metric'] == cmetric]
+        
+        sns.barplot(
+            data=data, 
+            x='Metric', 
+            y='Value', 
+            ax=ax, 
+            palette='coolwarm', 
+            edgecolor='black'
+        )
+        
+        ax.set_title(cmetric.replace('_', ' '), fontsize=13, fontweight='bold', pad=10)
+        ax.set_ylabel('Value', fontsize=11)
+        ax.tick_params(axis='x', rotation=45)
+        
+        for container in ax.containers:
+            ax.bar_label(container, fmt='%.4f', padding=2, fontsize=9)
+
+    fig.suptitle(f'Consistency across {group_by}', fontsize=16, fontweight='bold', y=0.98)
+    fig.tight_layout()
+    return fig

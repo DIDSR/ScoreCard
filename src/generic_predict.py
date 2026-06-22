@@ -1,23 +1,8 @@
 import os
 import sys
-import shutil
-import gc
 import time
-import yaml
-import gzip
-import glob
-import pydicom
-import cv2
-import logging
 
-import numpy           as np
-import pandas          as pd
-
-from   PIL             import Image
-from   pathlib         import Path
 from   tqdm            import tqdm
-from   datetime        import datetime
-from   sklearn.metrics import f1_score, accuracy_score, precision_recall_fscore_support, roc_auc_score
 
 
 sys.path.append('./src/')

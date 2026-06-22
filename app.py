@@ -28,13 +28,14 @@ from flask               import (
     jsonify, 
     session
 )
-from src.utils           import (
-    read_dicom, 
+from src.utils import (
     read_png, 
     create_image_df,
     hist_analysis,
     coverage_analysis,
-    congruence_analysis
+    congruence_analysis,
+    completeness_analysis,
+    consistency_analysis
 )
 
 
@@ -259,7 +260,6 @@ def generate_report():
 
     def run_inference(real_csv, synth_csv, is_preset):
         try:
-
             # ----------------------------------------------------------
             # 1. Run inference
             # ----------------------------------------------------------
@@ -274,10 +274,10 @@ def generate_report():
                 with progress_lock:
                     progress_store[job_id]['progress'] = pct
 
-            produce_output(real_csv          = real_csv,
-                           synth_csv         = synth_csv,
-                            output_dir       = job_output_dir, 
-                            progress_callback= inference_progress_callback
+            produce_output( real_csv          = real_csv,
+                            synth_csv         = synth_csv,
+                            output_dir        = job_output_dir, 
+                            progress_callback = inference_progress_callback
                         )
 
             # ----------------------------------------------------------
@@ -293,6 +293,39 @@ def generate_report():
 
             congruence_fig          = congruence_analysis('./data/features')
             congruence_fig.savefig(os.path.join(job_output_dir, 'congruence_fig.png'))
+
+            try:
+                real_meta_csv = real_csv.replace('.csv', '_with_metadata.csv')
+                synth_meta_csv = synth_csv.replace('.csv', '_with_metadata.csv')
+
+                if not os.path.exists(real_meta_csv):
+                    real_meta_csv = real_csv
+                if not os.path.exists(synth_meta_csv):
+                    synth_meta_csv = synth_csv
+
+                comp_df, comp_fig = completeness_analysis(real_meta_csv, synth_meta_csv,
+                                                          required_fields=['patient_id', 'sex', 'scanner_model', 'hospital'],
+                                                          label="report")
+                if comp_fig:
+                    comp_fig.savefig(os.path.join(job_output_dir, 'completeness_fig.png'))
+
+                cons_df_hosp, cons_fig_hosp = consistency_analysis(real_meta_csv, group_by="hospital", label="report")
+                if cons_fig_hosp:
+                    cons_fig_hosp.savefig(os.path.join(job_output_dir, 'consistency_hospital_fig.png'))
+
+                cons_df_scan, cons_fig_scan = consistency_analysis(real_meta_csv, group_by="scanner_model", label="report")
+                if cons_fig_scan:
+                    cons_fig_scan.savefig(os.path.join(job_output_dir, 'consistency_scanner_fig.png'))
+
+                if comp_df is not None and not comp_df.empty:
+                    comp_df.to_json(os.path.join(job_output_dir, 'completeness.json'), orient='records')
+                if cons_df_hosp is not None and not cons_df_hosp.empty:
+                    cons_df_hosp.to_json(os.path.join(job_output_dir, 'consistency_hospital.json'), orient='records')
+                if cons_df_scan is not None and not cons_df_scan.empty:
+                    cons_df_scan.to_json(os.path.join(job_output_dir, 'consistency_scanner.json'), orient='records')
+
+            except Exception as e:
+                print(f"[Job {job_id}] Completeness/Consistency analysis skipped or failed: {e}")
             
             plt.close('all')
 
@@ -344,17 +377,15 @@ def results(job_id):
     with progress_lock:
         job = progress_store.get(job_id)
 
-    if not job or job['status'] != 'completed':
-        flash('Results not ready yet.', 'error')
+    if not job or job['status'] != 'completed':  
         return redirect(url_for('index'))
 
-    # === Updated figure paths ===
-    histo_fig     = f"{job_id}/histo_fig.png"
-    coverage_fig  = f"{job_id}/coverage_fig.png"
-    congruence_fig = f"{job_id}/congruence_fig.png"
+    histo_fig         = f"{job_id}/histo_fig.png"
+    coverage_fig      = f"{job_id}/coverage_fig.png"
+    congruence_fig    = f"{job_id}/congruence_fig.png"
 
-    metrics_data = None
-    # (Optional) Load metrics.json if you still want it later
+    metrics_data      = None
+
     metrics_json_path = os.path.join(OUTPUT_FOLDER, job_id, 'metrics.json')
     if os.path.exists(metrics_json_path):
         with open(metrics_json_path, 'r') as f:
@@ -397,7 +428,6 @@ def results_coverage(job_id):
                            job_id=job_id,
                            coverage_fig=coverage_fig)
 
-
 @app.route('/results/<job_id>/congruence')
 def results_congruence(job_id):
     with progress_lock:
@@ -412,6 +442,38 @@ def results_congruence(job_id):
                            job_id=job_id,
                            congruence_fig=congruence_fig)
 
+# ============================================================
+# NEW ROUTES for Completeness and Consistency
+# ============================================================
+
+@app.route('/results/<job_id>/completeness')
+def results_completeness(job_id):
+    with progress_lock:
+        job = progress_store.get(job_id)
+
+    if not job or job['status'] != 'completed':
+        flash('Results not ready yet.', 'error')
+        return redirect(url_for('index'))
+
+    completeness_fig = f"{job_id}/completeness_fig.png"
+    return render_template('results_completeness.html',
+                           job_id=job_id,
+                           completeness_fig=completeness_fig)
+
+
+@app.route('/results/<job_id>/consistency')
+def results_consistency(job_id):
+    with progress_lock:
+        job = progress_store.get(job_id)
+
+    if not job or job['status'] != 'completed':
+        flash('Results not ready yet.', 'error')
+        return redirect(url_for('index'))
+
+    return render_template('results_consistency.html',
+                           job_id=job_id,
+                           consistency_hospital_fig=f"{job_id}/consistency_hospital_fig.png",
+                           consistency_scanner_fig=f"{job_id}/consistency_scanner_fig.png")
 
 @app.route('/download/<job_id>')
 def download_results(job_id):
@@ -441,7 +503,6 @@ def download_results(job_id):
         flash(f'Error creating zip file: {str(e)}', 'error')
         return redirect(url_for('results', job_id=job_id))
     finally:
-        # Clean up the zip file after sending
         if os.path.exists(zip_buffer):
             try:
                 os.remove(zip_buffer)
@@ -461,3 +522,5 @@ def output_file(filename):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050, use_reloader=False)
+
+

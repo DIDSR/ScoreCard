@@ -74,13 +74,24 @@
                             <p>Using <code>data/real_patch_appearance.csv</code> and <code>data/static_patch_appearance.csv</code>, along with associated images.</p>
                         </div>
 
+                        <!-- UPDATED: Two directory inputs for Real + Synthetic -->
                         <div id="field-directory" class="upload-field" style="display:none;">
-                            <label class="field-label">Directory Path</label>
-                            <input
-                                type="text"
-                                name="dir_path"
-                                class="text-input"
-                                placeholder="Enter absolute path to directory (e.g., /home/user/data)">
+                            <div style="margin-bottom: 1.25rem;">
+                                <label class="field-label">Real Data Directory</label>
+                                <input
+                                    type="text"
+                                    name="real_dir_path"
+                                    class="text-input"
+                                    placeholder="Enter absolute path to real data directory (e.g., /home/user/real_data)">
+                            </div>
+                            <div>
+                                <label class="field-label">Synthetic Data Directory</label>
+                                <input
+                                    type="text"
+                                    name="synth_dir_path"
+                                    class="text-input"
+                                    placeholder="Enter absolute path to synthetic data directory (e.g., /home/user/synth_data)">
+                            </div>
                         </div>
 
                         <div id="field-files" class="upload-field" style="display:none;">
