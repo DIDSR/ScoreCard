@@ -26,14 +26,15 @@ def boundary_dist(i, j, boundaries):
 def bootstrap_ci(data, n_boot=1000, ci=95, seed=42):
     rng        = np.random.default_rng(seed)
     data       = np.array(data)
-    data       = data[~np.isnan(data)]          
-    boot_means = [
-        np.mean(rng.choice(data, size=len(data), replace=True))
-        for _ in range(n_boot)
-    ]
+    data       = data[~np.isnan(data)]
 
-    lower = np.percentile(boot_means, (100 - ci) / 2)
-    upper = np.percentile(boot_means, 100 - (100 - ci) / 2)
+    boot_means = [
+                  np.mean(rng.choice(data, size=len(data), replace=True))
+                  for _ in range(n_boot)
+                 ]
+
+    lower      = np.percentile(boot_means, (100 - ci) / 2)
+    upper      = np.percentile(boot_means, 100 - (100 - ci) / 2)
 
     return lower, upper
 
@@ -53,8 +54,10 @@ def flatten_features(features_list):
 
 def filter_features(real_df, synth_df, min_ratio=0.5):
     valid = real_df.notna().mean() >= min_ratio
-    kept = valid[valid].index.tolist()
+    kept  = valid[valid].index.tolist()
+
     print(f"Keeping {len(kept)} features (≥ {min_ratio*100:.0f}% valid values)")
+
     return real_df[kept].copy(), synth_df[kept].copy(), kept
 
 def normalize_coverage_features(features):
@@ -98,6 +101,7 @@ def combine_features(features_list):
 def random_sampling(array, size, replace=False, seed=None):
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(array), size, replace=replace)
+
     return array[idx]
 
 def get_cosine_similarity(r, s):
@@ -106,6 +110,7 @@ def get_cosine_similarity(r, s):
 def get_jensen_shannon_divergence(r, s):
     rn = r / r.sum() if r.sum() else r
     sn = s / s.sum() if s.sum() else s
+
     return float(jensenshannon(rn, sn, base=2.0)**2)
 
 def get_earth_movers_distance(r, s):
@@ -120,4 +125,5 @@ def filter_low_nan_features(real_df, synth_df, min_valid_ratio=0.5):
     
     print(f"Keeping {len(kept)} / {real_df.shape[1]} features "
           f"(≥ {min_valid_ratio*100:.0f}% valid values)")
+          
     return real_df[kept].copy(), synth_df[kept].copy(), kept

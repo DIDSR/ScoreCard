@@ -54,58 +54,62 @@ def compute_congruence(r, s, sampling=True, seed=42):
     }
 
 def compute_completeness(df, required_fields=None, label=""):
-    """Compute completeness metrics: missing data % and required fields completeness %.
-    Follows style of compute_coverage. Assumes df is pandas DataFrame (or array-like).
-    If required_fields is None, uses all columns as 'required'.
-    """
     if df is None or len(df) == 0:
         print(f"  Warning: Too few samples for {label}")
         return {k: np.nan for k in ['Missing_Data_Percentage', 'Required_Fields_Completeness']}
 
     if hasattr(df, 'isna'):
         missing = int(df.isna().sum().sum())
-        total = int(df.size)
+        total   = int(df.size)
+
         if required_fields is None:
-            if hasattr(df, 'columns'):
-                req_fields = list(df.columns)
-            else:
-                req_fields = None
+            req_fields = list(df.columns) if hasattr(df, 'columns') else None
         else:
-            if hasattr(df, 'columns'):
-                req_fields = [f for f in (required_fields if isinstance(required_fields, (list, tuple)) else [required_fields])
-                              if f in df.columns]
-            else:
-                req_fields = required_fields if isinstance(required_fields, (list, tuple)) else [required_fields]
+            req_fields = [f for f in (required_fields if isinstance(required_fields, (list, tuple)) else [required_fields])
+                          if f in df.columns]
 
         if req_fields:
             try:
-                req_df = df[req_fields]
-                req_missing = int(req_df.isna().sum().sum())
-                req_total = int(req_df.size)
+                req_df           = df[req_fields]
+                req_missing      = int(req_df.isna().sum().sum())
+                req_total        = int(req_df.size)
                 req_complete_pct = ((req_total - req_missing) / req_total * 100.0) if req_total > 0 else np.nan
+
+                per_field = {}
+
+                for col in req_fields:
+                    n_total   = len(df)
+                    n_present = int(df[col].notna().sum())
+                    per_field[col] = (n_present / n_total * 100.0) if n_total > 0 else np.nan
+
             except Exception:
                 req_complete_pct = np.nan
+                per_field        = {}
         else:
             req_complete_pct = np.nan
+            per_field        = {}
     else:
-        # numpy fallback
-        arr = np.asarray(df)
+        arr   = np.asarray(df)
         total = arr.size
+
         try:
             missing = int(np.sum(np.isnan(arr)))
         except (TypeError, ValueError):
             missing = 0
-            print(f"  Warning: Could not determine missing values (non-numeric?) for {label}")
         req_complete_pct = ((total - missing) / total * 100.0) if total > 0 else np.nan
+        per_field        = {}
 
     missing_pct = (missing / total * 100.0) if total > 0 else np.nan
 
     metrics = {
-        'Missing_Data_Percentage':    missing_pct,
-        'Required_Fields_Completeness': req_complete_pct
+        'Missing_Data_Percentage':      missing_pct,
+        'Required_Fields_Completeness': req_complete_pct,
+        'per_field':                    per_field
     }
 
     for k, v in metrics.items():
+        if k == 'per_field':
+            continue
         val_str = f"{v:.2f}%" if not np.isnan(v) else "N/A"
         print(f"  {k:30s}: {val_str}")
 
@@ -122,20 +126,21 @@ def compute_consistency(group_data, label=""):
         print(f"  Warning: Too few groups (<2) for consistency computation in {label}")
         return {k: np.nan for k in ['Variance_of_Group_Means', 'Max_Min_Difference', 'ANOVA_F_statistic', 'ANOVA_p_value']}
 
-    groups = list(group_data.keys())
+    groups     = list(group_data.keys())
     data_lists = []
+
     for g in groups:
         d = np.asarray(group_data[g], dtype=float).flatten()
+
         if len(d) == 0:
             print(f"  Warning: Empty data for group '{g}' in {label}")
             return {k: np.nan for k in ['Variance_of_Group_Means', 'Max_Min_Difference', 'ANOVA_F_statistic', 'ANOVA_p_value']}
         data_lists.append(d)
 
-    # Group means for variance and range
-    group_means = np.array([np.mean(d) for d in data_lists])
-    n_groups = len(group_means)
+    group_means  = np.array([np.mean(d) for d in data_lists])
+    n_groups     = len(group_means)
 
-    var_across = np.var(group_means, ddof=1) if n_groups > 1 else np.nan
+    var_across   = np.var(group_means, ddof=1) if n_groups > 1 else np.nan
     max_min_diff = np.max(group_means) - np.min(group_means) if n_groups > 1 else np.nan
 
     try:

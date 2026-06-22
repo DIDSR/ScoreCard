@@ -50,15 +50,16 @@ def compute_nucleus_appearance_features(image, mask):
             order=0, preserve_range=True, anti_aliasing=False
         ).astype(mask.dtype)
 
-    props = measure.regionprops(mask, intensity_image=gray)
+    props              = measure.regionprops(mask, intensity_image=gray)
 
     gabor_frequencies  = [0.1, 0.3, 0.5]
     gabor_orientations = [0, np.pi/4, np.pi/2, 3*np.pi/4]
 
-    gabor_responses = {}
+    gabor_responses    = {}
+
     for freq in gabor_frequencies:
         for theta in gabor_orientations:
-            real, imag = filters.gabor(gray, frequency=freq, theta=theta)
+            real, imag                     = filters.gabor(gray, frequency=freq, theta=theta)
             gabor_responses[(freq, theta)] = np.sqrt(real**2 + imag**2)
 
     features = {
@@ -97,15 +98,15 @@ def compute_nucleus_appearance_features(image, mask):
 
                 glcm = feature.graycomatrix(
                     nucleus_uint8,
-                    distances=[1],
-                    angles=[0, np.pi/4, np.pi/2, 3*np.pi/4],
-                    levels=256,
-                    symmetric=True,
-                    normed=True
+                    distances = [1],
+                    angles    = [0, np.pi / 4, np.pi / 2, 3*np.pi / 4],
+                    levels    = 256,
+                    symmetric = True,
+                    normed    = True
                 )
-                features['glcm_contrast'].append(np.mean(feature.graycoprops(glcm, 'contrast')))
+                features['glcm_contrast'].append(np.mean(feature.graycoprops(glcm,    'contrast')))
                 features['glcm_homogeneity'].append(np.mean(feature.graycoprops(glcm, 'homogeneity')))
-                features['glcm_energy'].append(np.mean(feature.graycoprops(glcm, 'energy')))
+                features['glcm_energy'].append(np.mean(feature.graycoprops(glcm,      'energy')))
                 features['glcm_correlation'].append(np.mean(feature.graycoprops(glcm, 'correlation')))
             except Exception:
                 for k in ('glcm_contrast', 'glcm_homogeneity', 'glcm_energy', 'glcm_correlation'):
@@ -150,11 +151,10 @@ def compute_patch_appearance_features(image):
         gray      = image
         has_color = False
 
-    gray = (gray - gray.min()) / (gray.max() - gray.min() + 1e-10)
-
+    gray     = (gray - gray.min()) / (gray.max() - gray.min() + 1e-10)
     features = {
-        'mean_intensity': np.mean(gray),
-    }
+                'mean_intensity': np.mean(gray),
+               }
 
     gray_uint8 = (gray * 255).astype(np.uint8)
     distances  = [1, 2, 3]
@@ -162,11 +162,13 @@ def compute_patch_appearance_features(image):
 
     try:
         glcm = feature.graycomatrix(gray_uint8, 
-                                    distances=distances, 
-                                    angles=angles,
-                                    levels=256, 
-                                    symmetric=True, 
-                                    normed=True)
+                                    distances = distances, 
+                                    angles    = angles,
+                                    levels    = 256, 
+                                    symmetric = True, 
+                                    normed    = True
+                                    )
+
         features['glcm_contrast']    = np.mean(feature.graycoprops(glcm, 'contrast'))
         features['glcm_homogeneity'] = np.mean(feature.graycoprops(glcm, 'homogeneity'))
         features['glcm_energy']      = np.mean(feature.graycoprops(glcm, 'energy'))
@@ -199,7 +201,6 @@ def compute_patch_appearance_features(image):
 
 def compute_topological_features(mask, k=5, radius=50):
     props      = measure.regionprops(mask)
-
     centroids  = np.array([p.centroid for p in props])       
     labels     = np.array([p.label    for p in props])
 
@@ -212,11 +213,11 @@ def compute_topological_features(mask, k=5, radius=50):
 
         boundaries.append(boundary_px)
 
-    N                  = len(props)
-    tree               = KDTree(centroids)
+    N                 = len(props)
+    tree              = KDTree(centroids)
 
-    vor                = Voronoi(centroids)
-    voronoi_neighbors  = {i: set() for i in range(N)}
+    vor               = Voronoi(centroids)
+    voronoi_neighbors = {i: set() for i in range(N)}
 
     for ridge in vor.ridge_points:
         i, j = ridge
@@ -247,7 +248,7 @@ def compute_topological_features(mask, k=5, radius=50):
         knn_idxs    = knn_idxs[1:]
 
         features['knn_centroid_mean'].append(
-            np.mean([centroid_dist(i, j, centroids) for j in knn_idxs]))
+            np.mean([centroid_dist(i, j, centroids)     for j in knn_idxs]))
         features['knn_boundary_mean'].append(
             np.nanmean([boundary_dist(i, j, boundaries) for j in knn_idxs]))
 
@@ -256,7 +257,7 @@ def compute_topological_features(mask, k=5, radius=50):
 
         if len(radius_idxs) > 0:
             features['radius_centroid_mean'].append(
-                np.mean([centroid_dist(i, j, centroids) for j in radius_idxs]))
+                np.mean([centroid_dist(i, j, centroids)     for j in radius_idxs]))
             features['radius_boundary_mean'].append(
                 np.nanmean([boundary_dist(i, j, boundaries) for j in radius_idxs]))
         else:
@@ -267,7 +268,7 @@ def compute_topological_features(mask, k=5, radius=50):
 
         if len(vor_idxs) > 0:
             features['voronoi_centroid_mean'].append(
-                np.mean([centroid_dist(i, j, centroids) for j in vor_idxs]))
+                np.mean([centroid_dist(i, j, centroids)     for j in vor_idxs]))
             features['voronoi_boundary_mean'].append(
                 np.nanmean([boundary_dist(i, j, boundaries) for j in vor_idxs]))
         else:

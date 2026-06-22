@@ -163,25 +163,26 @@ def congruence_analysis(results_dir='./data/features'):
     return fig_congruence
 
 def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
-    """
-    Compute completeness metrics on real and synthetic DataFrames.
-    Returns a DataFrame (easy for frontend tables) + optional figure.
-    """
     from src.visualization import create_completeness_barplot
 
-    real_df    = pd.read_csv(real_csv)
-    synth_df   = pd.read_csv(synth_csv)
+    real_df         = pd.read_csv(real_csv)
+    synth_df        = pd.read_csv(synth_csv)
 
-    real_comp  = compute_completeness(real_df, required_fields=required_fields, label=f"{label}_real")
-    synth_comp = compute_completeness(synth_df, required_fields=required_fields, label=f"{label}_synth")
+    real_comp       = compute_completeness(real_df,  required_fields=required_fields, label=f"{label}_real")
+    synth_comp      = compute_completeness(synth_df, required_fields=required_fields, label=f"{label}_synth")
 
-    comp_df    = pd.DataFrame([
-        {'Dataset': 'Real', **real_comp},
+    real_per_field  = real_comp.pop('per_field',  {})
+    synth_per_field = synth_comp.pop('per_field', {})
+
+    comp_df = pd.DataFrame([
+        {'Dataset': 'Real',  **real_comp},
         {'Dataset': 'Synth', **synth_comp}
     ])
 
     try:
-        fig = create_completeness_barplot(comp_df)
+        fig = create_completeness_barplot(comp_df,
+                                          real_per_field=real_per_field,    
+                                          synth_per_field=synth_per_field)
     except Exception:
         fig = None
 

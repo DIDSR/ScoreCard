@@ -210,29 +210,15 @@
 
             <!-- ===== Navigation Cards to Individual Analysis Pages ===== -->
             <div class="analysis-nav-grid">
-
-                <!-- Histogram Analysis -->
-                <a href="{{ url_for('results_histogram', job_id=job_id) }}" class="analysis-nav-card">
+                <!-- Congruence Analysis -->
+                <a href="{{ url_for('results_congruence', job_id=job_id) }}" class="analysis-nav-card">
                     <div class="nav-card-header">
-                        <span class="card-step step-histogram">Histograms</span>
+                        <span class="card-step step-congruence">Congruence</span>
                     </div>
                     <div class="nav-card-body">
-                        <p>Visual comparison of feature value distributions between the real source dataset and the synthetic dataset.</p>
+                        <p>Analyze statistical similarity and congruence between real and synthetic feature sets.</p>
                         <div class="nav-card-footer">
-                            <span class="nav-link-text">View Full Histogram Report →</span>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- Completeness Analysis -->
-                <a href="{{ url_for('results_completeness', job_id=job_id) }}" class="analysis-nav-card">
-                    <div class="nav-card-header">
-                        <span class="card-step step-completeness">Completeness</span>
-                    </div>
-                    <div class="nav-card-body">
-                        <p>Evaluate missing values and fill rates for critical metadata fields across real and synthetic datasets.</p>
-                        <div class="nav-card-footer">
-                            <span class="nav-link-text">View Full Completeness Report →</span>
+                            <span class="nav-link-text">View Full Congruence Report →</span>
                         </div>
                     </div>
                 </a>
@@ -250,19 +236,20 @@
                     </div>
                 </a>
 
-                <!-- Congruence Analysis -->
-                <a href="{{ url_for('results_congruence', job_id=job_id) }}" class="analysis-nav-card">
+                <!-- Completeness Analysis -->
+                <a href="{{ url_for('results_completeness', job_id=job_id) }}" class="analysis-nav-card">
                     <div class="nav-card-header">
-                        <span class="card-step step-congruence">Congruence</span>
+                        <span class="card-step step-completeness">Completeness</span>
                     </div>
                     <div class="nav-card-body">
-                        <p>Analyze statistical similarity and congruence between real and synthetic feature sets.</p>
+                        <p>Evaluate missing values and fill rates for critical metadata fields across real and synthetic datasets.</p>
                         <div class="nav-card-footer">
-                            <span class="nav-link-text">View Full Congruence Report →</span>
+                            <span class="nav-link-text">View Full Completeness Report →</span>
                         </div>
                     </div>
                 </a>
 
+            
                 <!-- Consistency Analysis -->
                 <a href="{{ url_for('results_consistency', job_id=job_id) }}" class="analysis-nav-card">
                     <div class="nav-card-header">
@@ -272,6 +259,19 @@
                         <p>Measure how consistent feature quality is across subgroups (e.g. hospital and scanner model).</p>
                         <div class="nav-card-footer">
                             <span class="nav-link-text">View Full Consistency Report →</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Histogram Analysis -->
+                <a href="{{ url_for('results_histogram', job_id=job_id) }}" class="analysis-nav-card">
+                    <div class="nav-card-header">
+                        <span class="card-step step-histogram">Histograms</span>
+                    </div>
+                    <div class="nav-card-body">
+                        <p>Visual comparison of feature value distributions between the real source dataset and the synthetic dataset.</p>
+                        <div class="nav-card-footer">
+                            <span class="nav-link-text">View Full Histogram Report →</span>
                         </div>
                     </div>
                 </a>

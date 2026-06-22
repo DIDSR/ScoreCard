@@ -5,8 +5,10 @@ from   pathlib        import Path
 
 def save_features(features, save_path):
     np_features = {}
+
     for key, val in features.items():
         cleaned = [v if v is not None else np.zeros(1) for v in val]
+        
         try:
             np_features[key] = np.array(cleaned)
         except ValueError:

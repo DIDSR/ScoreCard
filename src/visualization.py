@@ -13,47 +13,50 @@ from   matplotlib         import pyplot as plt
 
 def print_histograms(real_features, synth_features):
     feature_names = list(real_features.keys())
-    n = len(feature_names)
+    n             = len(feature_names)
 
-    fig, axes = plt.subplots(n, 1, figsize=(10, 5.2 * n), sharex=False)
+    fig, axes     = plt.subplots(n, 1, figsize=(10, 5.2 * n), sharex=False)
+
     if n == 1:
         axes = np.atleast_1d(axes)
 
     for ax, feature_name in zip(axes, feature_names):
-        real_data  = real_features[feature_name]
-        synth_data = synth_features[feature_name]
+        real_data    = real_features[feature_name]
+        synth_data   = synth_features[feature_name]
 
-        real_mean = np.nanmean(real_data)
-        real_ci   = bootstrap_ci(real_data)
+        real_mean    = np.nanmean(real_data)
+        real_ci      = bootstrap_ci(real_data)
 
-        synth_mean = np.nanmean(synth_data)
-        synth_ci   = bootstrap_ci(synth_data)
+        synth_mean   = np.nanmean(synth_data)
+        synth_ci     = bootstrap_ci(synth_data)
 
-        x_min = np.nanmin([np.nanmin(real_data), np.nanmin(synth_data)])
-        x_max = np.nanmax([np.nanmax(real_data), np.nanmax(synth_data)])
+        x_min        = np.nanmin([np.nanmin(real_data), np.nanmin(synth_data)])
+        x_max        = np.nanmax([np.nanmax(real_data), np.nanmax(synth_data)])
         shared_range = (x_min, x_max)
 
         ax.hist(real_data,
-                bins=30,
-                alpha=0.6,
-                color='#9999CC',
-                label=f'Real (n={len(real_data)})',
-                density=True,
-                range=shared_range,
-                edgecolor='black',
-                linewidth=0.5)
+                bins      = 30,
+                alpha     = 0.6,
+                color     = '#9999CC',
+                label     = f'Real (n={len(real_data)})',
+                density   = True,
+                range     = shared_range,
+                edgecolor = 'black',
+                linewidth = 0.5
+                )
 
         ax.hist(synth_data,
-                bins=30,
-                alpha=0.6,
-                color='#FF9966',
-                label=f'Synthetic (n={len(synth_data)})',
-                density=True,
-                range=shared_range,
-                edgecolor='black',
-                linewidth=0.5)
+                bins      = 30,
+                alpha     = 0.6,
+                color     = '#FF9966',
+                label     = f'Synthetic (n={len(synth_data)})',
+                density   = True,
+                range     = shared_range,
+                edgecolor = 'black',
+                linewidth = 0.5
+                )
 
-        x_vals = np.linspace(x_min, x_max, 300)
+        x_vals      = np.linspace(x_min, x_max, 300)
 
         real_clean  = np.asarray(real_data, dtype=float)
         synth_clean = np.asarray(synth_data, dtype=float)
@@ -61,8 +64,11 @@ def print_histograms(real_features, synth_features):
         synth_clean = synth_clean[~np.isnan(synth_clean)]
 
         if len(np.unique(real_clean)) > 1:
-            ax.plot(x_vals, gaussian_kde(real_clean)(x_vals),
-                    color='#9999CC', linewidth=2)
+            ax.plot(x_vals, 
+                    gaussian_kde(real_clean)(x_vals),
+                    color='#9999CC', 
+                    linewidth=2
+                    )
 
         if len(np.unique(synth_clean)) > 1:
             ax.plot(x_vals, gaussian_kde(synth_clean)(x_vals),
@@ -113,26 +119,27 @@ def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
     gabor_frequencies  = [0.1, 0.3, 0.5]
     gabor_orientations = [0, np.pi/4, np.pi/2, 3*np.pi/4]
 
-    gabor_responses = {}
+    gabor_responses    = {}
+
     for freq in gabor_frequencies:
         for theta in gabor_orientations:
             real, imag = filters.gabor(gray, frequency=freq, theta=theta)
             gabor_responses[(freq, theta)] = np.sqrt(real**2 + imag**2)
 
-    props = measure.regionprops(mask, intensity_image=gray)
-    props = [p for p in props if p.image.shape[0] > 5 and p.image.shape[1] > 5]
+    props   = measure.regionprops(mask, intensity_image=gray)
+    props   = [p for p in props if p.image.shape[0] > 5 and p.image.shape[1] > 5]
     sampled = props[:n_examples]
 
     for i, prop in enumerate(sampled):
-        minr, minc, maxr, maxc = prop.bbox
-        nucleus_region = gray[minr:maxr, minc:maxc]
-        nucleus_mask   = prop.image
-        skeleton       = skeletonize(nucleus_mask)
+        minr, minc, maxr, maxc        = prop.bbox
+        nucleus_region                = gray[minr:maxr, minc:maxc]
+        nucleus_mask                  = prop.image
+        skeleton                      = skeletonize(nucleus_mask)
 
-        display_region = nucleus_region.copy()
+        display_region                = nucleus_region.copy()
         display_region[~nucleus_mask] = 0
 
-        fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+        fig, axes                     = plt.subplots(1, 3, figsize=(10, 3))
         fig.suptitle(f"Nucleus {i+1} — Skeleton", fontsize=13)
 
         axes[0].imshow(display_region, cmap='gray')
@@ -174,11 +181,11 @@ def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
         plt.show()
 
 def create_coverage_barplot(coverage_df: pd.DataFrame):
-    metrics = ['Variance', 'Entropy', 'Distance_to_Centroid', 'Convex_Hull_Volume']
-    df_plot = coverage_df.reset_index().rename(columns={'index': 'Dataset'})
-    df_melt = df_plot.melt(id_vars='Dataset', var_name='Metric', value_name='Value')
+    metrics   = ['Variance', 'Entropy', 'Distance_to_Centroid', 'Convex_Hull_Volume']
+    df_plot   = coverage_df.reset_index().rename(columns={'index': 'Dataset'})
+    df_melt   = df_plot.melt(id_vars='Dataset', var_name='Metric', value_name='Value')
 
-    n = len(metrics)
+    n         = len(metrics)
     fig, axes = plt.subplots(n, 1, figsize=(9, 4.8 * n))
 
     for ax, metric in zip(axes, metrics):
@@ -186,12 +193,12 @@ def create_coverage_barplot(coverage_df: pd.DataFrame):
         
         sns.barplot(
             data=data,
-            x='Dataset',
-            y='Value',
-            ax=ax,
-            palette='Set2',
-            edgecolor='black',
-            linewidth=0.7
+            x         = 'Dataset',
+            y         = 'Value',
+            ax        = ax,
+            palette   = 'Set2',
+            edgecolor = 'black',
+            linewidth = 0.7
         )
         
         ax.set_title(f'{metric}', fontsize=13, fontweight='bold', pad=8)
@@ -208,14 +215,14 @@ def create_coverage_barplot(coverage_df: pd.DataFrame):
     return fig
 
 def create_congruence_barplot(congruence_df: pd.DataFrame):
-    metrics = ['JSD', 'EMD_Wasserstein', 'Cosine_Similarity']
+    metrics   = ['JSD', 'EMD_Wasserstein', 'Cosine_Similarity']
     
-    df_melt = congruence_df.melt(
-        id_vars=['Feature'],
-        value_vars=metrics,
-        var_name='Metric',
-        value_name='Value'
-    )
+    df_melt   = congruence_df.melt(
+                                    id_vars    = ['Feature'],
+                                    value_vars = metrics,
+                                    var_name   = 'Metric',
+                                    value_name = 'Value'
+                                   )
 
     fig, axes = plt.subplots(1, 3, figsize=(22, 10))
 
@@ -224,12 +231,12 @@ def create_congruence_barplot(congruence_df: pd.DataFrame):
         
         sns.barplot(
             data=data,
-            y='Feature',
-            x='Value',
-            ax=ax,
-            palette='viridis',
-            edgecolor='black',
-            linewidth=0.4
+            y         = 'Feature',
+            x         = 'Value',
+            ax        = ax,
+            palette   = 'viridis',
+            edgecolor = 'black',
+            linewidth = 0.4
         )
         
         ax.set_title(metric, fontsize=20, fontweight='bold', pad=10)
@@ -244,28 +251,66 @@ def create_congruence_barplot(congruence_df: pd.DataFrame):
 
     return fig
 
-# Add these two functions at the very end of visualization.py
+def create_completeness_barplot(comp_df: pd.DataFrame,
+                                 real_per_field: dict = None,
+                                 synth_per_field: dict = None):
+    """Barplot for aggregate completeness metrics + per-field completeness."""
 
-def create_completeness_barplot(comp_df: pd.DataFrame):
-    """Simple barplot for completeness metrics."""
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+    metrics       = ['Missing_Data_Percentage', 'Required_Fields_Completeness']
+    df_melt       = comp_df.melt(id_vars='Dataset', value_vars=metrics,
+                                 var_name='Metric', value_name='Value')
 
-    metrics = ['Missing_Data_Percentage', 'Required_Fields_Completeness']
-    df_melt = comp_df.melt(id_vars='Dataset', value_vars=metrics,
-                           var_name='Metric', value_name='Value')
+    has_per_field = bool(real_per_field or synth_per_field)
+    n_rows        = 2 if has_per_field else 1
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    for ax, metric in zip(axes, metrics):
+    fig, axes     = plt.subplots(n_rows, 2, figsize=(14, 5 * n_rows))
+    top_axes      = axes[0] if has_per_field else axes
+
+    for ax, metric in zip(top_axes, metrics):
         data = df_melt[df_melt['Metric'] == metric]
-        sns.barplot(data=data, x='Dataset', y='Value', ax=ax, palette='Set2', edgecolor='black')
+        sns.barplot(data=data, x='Dataset', y='Value', ax=ax,
+                    palette='Set2', edgecolor='black')
         ax.set_title(metric.replace('_', ' '), fontsize=13, fontweight='bold')
+        ax.set_ylim(0, 110)
+        ax.set_ylabel('Percentage (%)')
         for container in ax.containers:
-            ax.bar_label(container, fmt='%.2f', padding=3, fontsize=10)
+            ax.bar_label(container, fmt='%.2f%%', padding=3, fontsize=10)
 
-    fig.suptitle('Completeness: Real vs Synthetic', fontsize=15, fontweight='bold', y=0.975)
+    if has_per_field:
+        all_fields = sorted(set(list(real_per_field.keys()) + list(synth_per_field.keys())))
+
+        per_field_rows = []
+        for field in all_fields:
+            per_field_rows.append({'Dataset': 'Real',  'Field': field,
+                                   'Completeness (%)': real_per_field.get(field, np.nan)})
+            per_field_rows.append({'Dataset': 'Synth', 'Field': field,
+                                   'Completeness (%)': synth_per_field.get(field, np.nan)})
+
+        per_field_df = pd.DataFrame(per_field_rows)
+
+        ax_per       = fig.add_subplot(2, 1, 2)
+        axes[1][0].remove()
+        axes[1][1].remove()
+
+        sns.barplot(data=per_field_df, x='Field', y='Completeness (%)',
+                    hue='Dataset', ax=ax_per,
+                    palette='Set2', edgecolor='black')
+
+        ax_per.set_title('Per-Field Completeness: Real vs Synthetic',
+                         fontsize=13, fontweight='bold', pad=10)
+        ax_per.set_xlabel('Metadata Field', fontsize=11)
+        ax_per.set_ylabel('Completeness (%)', fontsize=11)
+        ax_per.set_ylim(0, 110)
+        ax_per.tick_params(axis='x', rotation=30)
+        ax_per.legend(title='Dataset', fontsize=10)
+
+        for container in ax_per.containers:
+            ax_per.bar_label(container, fmt='%.1f%%', padding=2, fontsize=9)
+
+    fig.suptitle('Completeness: Real vs Synthetic', fontsize=15, fontweight='bold', y=0.995)
     fig.tight_layout()
     return fig
+
 
 
 def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
@@ -277,18 +322,19 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
         fig, ax = plt.subplots(figsize=(8, 4))
         ax.text(0.5, 0.5, 'No consistency data available', ha='center', va='center', fontsize=14)
         ax.axis('off')
+
         return fig
 
     metrics_to_plot = ['Variance_of_Group_Means', 'Max_Min_Difference', 'ANOVA_F_statistic']
     
-    df_melt = cons_df.melt(
-        id_vars=['Metric'], 
-        value_vars=metrics_to_plot,
-        var_name='Consistency_Metric', 
-        value_name='Value'
-    )
+    df_melt         = cons_df.melt(
+                                    id_vars=['Metric'], 
+                                    value_vars=metrics_to_plot,
+                                    var_name='Consistency_Metric', 
+                                    value_name='Value'
+                                   )
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    fig, axes       = plt.subplots(1, 3, figsize=(18, 6))
 
     for ax, cmetric in zip(axes, metrics_to_plot):
         data = df_melt[df_melt['Consistency_Metric'] == cmetric]
@@ -311,4 +357,5 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
 
     fig.suptitle(f'Consistency across {group_by}', fontsize=16, fontweight='bold', y=0.98)
     fig.tight_layout()
+
     return fig

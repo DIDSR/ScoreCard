@@ -178,6 +178,20 @@ body {
     color: white !important;
 }
 
+.card-step.step-completeness,
+.nav-card-header .card-step.step-completeness,
+.analysis-card-header .card-step.step-completeness {
+    background: #16a34a !important;
+    color: white !important;
+}
+
+.card-step.step-consistency,
+.nav-card-header .card-step.step-consistency,
+.analysis-card-header .card-step.step-consistency {
+    background: #ea580c !important;
+    color: white !important;
+}
+
 .card-title {
     font-size: 1.05rem;
     font-weight: 600;
