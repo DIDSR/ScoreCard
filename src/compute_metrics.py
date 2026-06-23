@@ -115,7 +115,6 @@ def compute_completeness(df, required_fields=None, label=""):
 
     return metrics
 
-
 def compute_consistency(group_data, label=""):
     """Compute consistency metrics across subgroups: variance of group means,
     max-min difference of group means, and one-way ANOVA for significance of differences.

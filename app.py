@@ -6,42 +6,44 @@ import threading
 import json
 import warnings
 import matplotlib
-matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import numpy             as np
 import pandas            as pd
 
-warnings.filterwarnings("ignore")
+
 
 from werkzeug.utils      import secure_filename
 from src.generic_predict import produce_output
 
 from flask               import (
-    Flask, 
-    render_template, 
-    request, 
-    redirect, 
-    url_for, 
-    flash, 
-    send_from_directory, 
-    jsonify, 
-    session
-)
-from src.utils import (
-    read_png, 
-    create_image_df,
-    hist_analysis,
-    coverage_analysis,
-    congruence_analysis,
-    completeness_analysis,
-    consistency_analysis
-)
+                                 Flask,
+                                 render_template,
+                                 request,
+                                 redirect,
+                                 url_for,
+                                 flash,
+                                 send_from_directory,
+                                 jsonify,
+                                 session
+                                )
+from src.utils           import (
+                                 read_png,
+                                 create_image_df,
+                                 hist_analysis,
+                                 coverage_analysis,
+                                 congruence_analysis,
+                                 completeness_analysis,
+                                 consistency_analysis
+                                )
 
+warnings.filterwarnings("ignore")
+matplotlib.use('Agg')
 
-app = Flask(__name__, 
-            template_folder='flask_files/templates', 
-            static_folder='flask_files/static')
+app            = Flask(__name__,
+                       template_folder='flask_files/templates',
+                       static_folder='flask_files/static'
+                      )
 app.secret_key = 'mammoqc_secret_key'
 
 # Configuration
@@ -106,7 +108,7 @@ def cleanup_tmp():
 def generate_previews(df, n=4, prefix="img", synth_df=None):
     """
     Generate resized preview images.
-    
+
     If synth_df is provided → returns two aligned lists: (real_previews, synth_previews)
     Otherwise → returns single list (original behavior)
     """
@@ -118,15 +120,12 @@ def generate_previews(df, n=4, prefix="img", synth_df=None):
         img_path  = row['filepath']
         real_stem = os.path.splitext(os.path.basename(str(img_path)))[0]
 
-        if str(img_path).lower().endswith('.png'):
-            img_array = read_png(img_path)
-        else:
-            img_array = read_dicom(img_path)
+        img_array = read_png(img_path)
 
         target_size  = 250
         h, w         = img_array.shape[:2]
         scale        = target_size / max(h, w)
-        img_resized  = cv2.resize(img_array, 
+        img_resized  = cv2.resize(img_array,
                                  (int(w * scale), int(h * scale)),
                                  interpolation = cv2.INTER_LINEAR
                                  )
@@ -145,22 +144,19 @@ def generate_previews(df, n=4, prefix="img", synth_df=None):
                 synth_row  = matching.sample(1).iloc[0]
                 synth_path = synth_row['filepath']
 
-                if str(synth_path).lower().endswith('.png'):
-                    s_img = read_png(synth_path)
-                else:
-                    s_img = read_dicom(synth_path)
+                s_img = read_png(synth_path)
 
                 sh, sw    = s_img.shape[:2]
                 s_scale   = target_size / max(sh, sw)
-                s_resized = cv2.resize(s_img, 
-                                       (int(sw * s_scale), 
+                s_resized = cv2.resize(s_img,
+                                       (int(sw * s_scale),
                                        int(sh * s_scale)),
                                        interpolation=cv2.INTER_LINEAR
                                        )
 
                 s_name    = f"synth_preview_{uuid.uuid4().hex}.png"
                 s_path    = os.path.join(UPLOAD_FOLDER, s_name)
-                
+
                 plt.imsave(s_path, s_resized)
                 synth_previews.append(s_name)
             else:
@@ -170,7 +166,7 @@ def generate_previews(df, n=4, prefix="img", synth_df=None):
         print(f"DEBUG >>> {prefix}: Generated {len(real_previews)} paired previews")
         return real_previews, synth_previews
     else:
-        print(f"DEBUG >>> {prefix}: Sampled {len(samples)} rows, appended {len(real_previews)} previews")
+        print(f"DEBUG >>> {prefix}: Sampled   {len(samples)} rows, appended {len(real_previews)} previews")
         return real_previews
 
 @app.route('/')
@@ -252,7 +248,7 @@ def generate_report():
     if not real_csv:
         flash('No real dataset selected. Please upload images first.', 'error')
         return redirect(url_for('index'))
-    
+
     elif not synth_csv:
         flash('No synthetic dataset selected. Please upload images first.', 'error')
         return redirect(url_for('index'))
@@ -280,7 +276,7 @@ def generate_report():
 
             produce_output( real_csv          = real_csv,
                             synth_csv         = synth_csv,
-                            output_dir        = job_output_dir, 
+                            output_dir        = job_output_dir,
                             progress_callback = inference_progress_callback
                            )
 
@@ -332,7 +328,7 @@ def generate_report():
 
             except Exception as e:
                 print(f"[Job {job_id}] Completeness/Consistency analysis skipped or failed: {e}")
-            
+
             plt.close('all')
 
             # ----------------------------------------------------------
@@ -385,7 +381,7 @@ def results(job_id):
     with progress_lock:
         job = progress_store.get(job_id)
 
-    if not job or job['status'] != 'completed':  
+    if not job or job['status'] != 'completed':
         return redirect(url_for('index'))
 
     histo_fig         = f"{job_id}/histo_fig.png"
@@ -505,7 +501,7 @@ def download_results(job_id):
     zip_buffer = os.path.join(OUTPUT_FOLDER, f"{job_id}.zip")
     try:
         shutil.make_archive(
-                            base_name = os.path.join(OUTPUT_FOLDER, job_id), 
+                            base_name = os.path.join(OUTPUT_FOLDER, job_id),
                             format    = 'zip',
                             root_dir  = OUTPUT_FOLDER,
                             base_dir  = job_id
@@ -520,7 +516,7 @@ def download_results(job_id):
 
     except Exception as e:
         flash(f'Error creating zip file: {str(e)}', 'error')
-        
+
         return redirect(url_for('results', job_id=job_id))
     finally:
         if os.path.exists(zip_buffer):
@@ -542,5 +538,3 @@ def output_file(filename):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050, use_reloader=False)
-
-
