@@ -303,28 +303,36 @@ def generate_report():
                 if not os.path.exists(synth_meta_csv):
                     synth_meta_csv = synth_csv
 
-                comp_df, comp_fig = completeness_analysis(real_meta_csv, synth_meta_csv,
-                                                          required_fields=['patient_id', 'sex', 'scanner_model', 'hospital'],
-                                                          label="report")
+                comp_df, comp_fig = completeness_analysis(
+                                                            real_meta_csv,
+                                                            synth_meta_csv,
+                                                            label="report"
+                                                         )
                 if comp_fig:
                     comp_fig.savefig(os.path.join(job_output_dir, 'completeness_fig.png'))
 
-                cons_df_hosp, cons_fig_hosp = consistency_analysis(real_meta_csv, group_by="hospital", label="report")
+                cons_df_race, cons_fig_race = consistency_analysis(
+                                                                    real_meta_csv,
+                                                                    group_by="Race",
+                                                                    label="report"
+                                                                  )
+                if cons_fig_race:
+                    cons_fig_race.savefig(os.path.join(job_output_dir, 'consistency_race_fig.png'))
 
-                if cons_fig_hosp:
-                    cons_fig_hosp.savefig(os.path.join(job_output_dir, 'consistency_hospital_fig.png'))
-
-                cons_df_scan, cons_fig_scan = consistency_analysis(real_meta_csv, group_by="scanner_model", label="report")
-
-                if cons_fig_scan:
-                    cons_fig_scan.savefig(os.path.join(job_output_dir, 'consistency_scanner_fig.png'))
+                cons_df_vendor, cons_fig_vendor = consistency_analysis(
+                    real_meta_csv,
+                    group_by="vendor",
+                    label="report"
+                )
+                if cons_fig_vendor:
+                    cons_fig_vendor.savefig(os.path.join(job_output_dir, 'consistency_vendor_fig.png'))
 
                 if comp_df is not None and not comp_df.empty:
                     comp_df.to_json(os.path.join(job_output_dir,      'completeness.json'),         orient='records')
                 if cons_df_hosp is not None and not cons_df_hosp.empty:
-                    cons_df_hosp.to_json(os.path.join(job_output_dir, 'consistency_hospital.json'), orient='records')
+                    cons_df_hosp.to_json(os.path.join(job_output_dir, 'consistency_race.json'), orient='records')
                 if cons_df_scan is not None and not cons_df_scan.empty:
-                    cons_df_scan.to_json(os.path.join(job_output_dir, 'consistency_scanner.json'),  orient='records')
+                    cons_df_scan.to_json(os.path.join(job_output_dir, 'consistency_vendor.json'),  orient='records')
 
             except Exception as e:
                 print(f"[Job {job_id}] Completeness/Consistency analysis skipped or failed: {e}")
@@ -486,8 +494,8 @@ def results_consistency(job_id):
 
     return render_template('results_consistency.html',
                            job_id                   = job_id,
-                           consistency_hospital_fig = f"{job_id}/consistency_hospital_fig.png",
-                           consistency_scanner_fig  = f"{job_id}/consistency_scanner_fig.png")
+                           consistency_race_fig    = f"{job_id}/consistency_race_fig.png",
+                           consistency_vendor_fig  = f"{job_id}/consistency_vendor_fig.png")
 
 @app.route('/download/<job_id>')
 def download_results(job_id):

@@ -165,11 +165,19 @@ def congruence_analysis(results_dir='./data/features'):
 def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
     from src.visualization import create_completeness_barplot
 
-    real_df         = pd.read_csv(real_csv)
-    synth_df        = pd.read_csv(synth_csv)
+    real_df  = pd.read_csv(real_csv)
+    synth_df = pd.read_csv(synth_csv)
 
-    real_comp       = compute_completeness(real_df,  required_fields=required_fields, label=f"{label}_real")
-    synth_comp      = compute_completeness(synth_df, required_fields=required_fields, label=f"{label}_synth")
+    real_df.columns  = real_df.columns.str.strip()
+    synth_df.columns = synth_df.columns.str.strip()
+
+    if required_fields is None:
+        required_fields = list(
+            set(real_df.columns).intersection(set(synth_df.columns))
+        )
+
+    real_comp  = compute_completeness(real_df,  required_fields=required_fields, label=f"{label}_real")
+    synth_comp = compute_completeness(synth_df, required_fields=required_fields, label=f"{label}_synth")
 
     real_per_field  = real_comp.pop('per_field',  {})
     synth_per_field = synth_comp.pop('per_field', {})
@@ -181,7 +189,7 @@ def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
 
     try:
         fig = create_completeness_barplot(comp_df,
-                                          real_per_field=real_per_field,    
+                                          real_per_field=real_per_field,
                                           synth_per_field=synth_per_field)
     except Exception:
         fig = None
@@ -189,21 +197,27 @@ def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
     return comp_df, fig
 
 
-def consistency_analysis(csv_path, group_by="hospital", metric_cols=None, label=""):
-    """
-    Compute consistency metrics across one grouping column.
-    The paper recommends evaluating one grouping variable at a time.
-    """
+def consistency_analysis(csv_path, group_by="Race", metric_cols=None, label=""):
     from src.visualization import create_consistency_barplot
 
     df = pd.read_csv(csv_path)
 
+    df = df.replace(r'^\s*$', np.nan, regex=True)
+
     if group_by not in df.columns:
         raise ValueError(f"group_by column '{group_by}' not found in CSV.")
 
+    df = df.dropna(subset=[group_by])
+
     if metric_cols is None:
-        default_metrics = ['mean_intensity', 'glcm_contrast', 'glcm_homogeneity',
-                           'glcm_energy', 'glcm_correlation', 'mean_r', 'mean_g', 'mean_b']
+        default_metrics = [
+            'Age at dx',
+            'BMI at dx (kg)',
+            'BMI at follow-up (kg)',
+            'mpp',
+            'compressionratio',
+            'exposure time'
+        ]
         metric_cols = [c for c in default_metrics if c in df.columns]
 
     if not metric_cols:
@@ -217,7 +231,7 @@ def consistency_analysis(csv_path, group_by="hospital", metric_cols=None, label=
         group_data = {
             str(g): group[metric].dropna().values
             for g, group in df.groupby(group_by)
-            if len(group) > 0
+            if len(group[metric].dropna()) > 0
         }
 
         if len(group_data) < 2:

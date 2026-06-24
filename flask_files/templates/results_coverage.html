@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card - Coverage Analysis</title>
+    <title>ScoreCard - Coverage Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .figure-container img {
@@ -81,7 +81,7 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
+                <h1>ScoreCard</h1>
                 <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
             </div>
             <div class="header-right">
@@ -109,12 +109,40 @@
                     <h2 class="card-title">Synthetic Data Coverage Assessment</h2>
                 </div>
                 <div class="analysis-card-body">
-                    <p class="analysis-description">
-                        This analysis visualizes the extent to which the synthetic dataset covers the 
-                        feature space of the real data. It helps identify regions of high and low 
-                        support, highlighting potential gaps or over-representation in the generated 
-                        synthetic samples.
-                    </p>
+                    <div class="analysis-description">
+                        <p>
+                            This analysis visualizes the extent to which the synthetic dataset covers the
+                            feature space of the real data. It helps identify regions of high and low
+                            support, highlighting potential gaps or over-representation in the generated
+                            synthetic samples.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Variance</strong> — Measures the overall spread of normalized feature
+                                values across all samples; higher variance suggests the dataset occupies a
+                                broader range of the feature space.
+                            </li>
+                            <li>
+                                <strong>Entropy</strong> — Computed on the mean feature vector (normalized to
+                                sum to 1), this quantifies the uniformity of feature importance across
+                                dimensions; higher entropy indicates more evenly distributed feature
+                                contributions.
+                            </li>
+                            <li>
+                                <strong>Distance to Centroid</strong> — The average pairwise distance from
+                                each sample to the mean (centroid) of the normalized feature array; larger
+                                values indicate that samples are more spread out from the center of the
+                                distribution.
+                            </li>
+                            <li>
+                                <strong>Convex Hull Volume</strong> — Computed on the first two PCA components
+                                of the normalized data, estimating the geometric extent of the dataset in
+                                2D reduced space; a larger volume suggests broader coverage of the feature
+                                space.
+                            </li>
+                        </ul>
+                    </div>
+
 
                     <div class="figure-container">
                         <img src="{{ url_for('static', filename='outputs/' + coverage_fig) }}" alt="Coverage Analysis Report">

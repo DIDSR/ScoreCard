@@ -10,7 +10,7 @@ sys.path.append('./src/')
 def produce_output(real_csv=None, synth_csv=None, output_dir='./output', progress_callback=None):
     os.makedirs(output_dir, exist_ok=True)
 
-    test_data = {i:i for i in range(1, 1)}
+    test_data = {i:i for i in range(1, 2)}
 
     outputs   = []
     data_id   = []

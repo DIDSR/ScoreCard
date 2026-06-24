@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card</title>
+    <title>ScoreCard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <!-- jQuery must be hosted locally at static/js/jquery-3.6.0.min.js -->
     <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
@@ -19,8 +19,8 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
-                <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
+                <h1>ScoreCard</h1>
+                <p class="subtitle">Comparison of Real and Synthetic Datasets</p>
             </div>
             <div class="header-right">
                 <!-- Right logo / text placeholder -->
@@ -74,25 +74,62 @@
                             <p>Using <code>data/real_patch_appearance.csv</code> and <code>data/static_patch_appearance.csv</code>, along with associated images.</p>
                         </div>
 
-                        <!-- UPDATED: Two directory inputs for Real + Synthetic -->
                         <div id="field-directory" class="upload-field" style="display:none;">
-                            <div style="margin-bottom: 1.25rem;">
-                                <label class="field-label">Real Data Directory</label>
-                                <input
-                                    type="text"
-                                    name="real_dir_path"
-                                    class="text-input"
-                                    placeholder="Enter absolute path to real data directory (e.g., /home/user/real_data)">
-                            </div>
-                            <div>
-                                <label class="field-label">Synthetic Data Directory</label>
-                                <input
-                                    type="text"
-                                    name="synth_dir_path"
-                                    class="text-input"
-                                    placeholder="Enter absolute path to synthetic data directory (e.g., /home/user/synth_data)">
-                            </div>
+
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="field-label">Real Data Directory</label>
+                            <input
+                                type="text"
+                                name="real_dir_path"
+                                class="text-input"
+                                placeholder="Enter absolute path to real data directory (e.g., /home/user/real_data)">
                         </div>
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="field-label">Synthetic Data Directory</label>
+                            <input
+                                type="text"
+                                name="synth_dir_path"
+                                class="text-input"
+                                placeholder="Enter absolute path to synthetic data directory (e.g., /home/user/synth_data)">
+                        </div>
+
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="field-label">Real Metadata</label>
+                            <div class="upload-area" onclick="document.getElementById('real-metadata-input').click()">
+                                <span class="upload-icon">📄</span>
+                                <span class="upload-text">Click to select Real Metadata file</span>
+                                <span class="upload-subtext">.csv or .json files accepted</span>
+                                <input id="real-metadata-input" type="file" name="real_metadata" accept=".csv,.json"
+                                    style="display:none;" onchange="updateDirectoryFileLabel(this, 'real-metadata-label')">
+                            </div>
+                            <p id="real-metadata-label" class="file-label-text" style="display:none;"></p>
+                        </div>
+
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="field-label">Synthetic Metadata</label>
+                            <div class="upload-area" onclick="document.getElementById('synth-metadata-input').click()">
+                                <span class="upload-icon">📄</span>
+                                <span class="upload-text">Click to select Synthetic Metadata file</span>
+                                <span class="upload-subtext">.csv or .json files accepted</span>
+                                <input id="synth-metadata-input" type="file" name="synth_metadata" accept=".csv,.json"
+                                    style="display:none;" onchange="updateDirectoryFileLabel(this, 'synth-metadata-label')">
+                            </div>
+                            <p id="synth-metadata-label" class="file-label-text" style="display:none;"></p>
+                        </div>
+
+                        <div>
+                            <label class="field-label">Reference Dictionary</label>
+                            <div class="upload-area" onclick="document.getElementById('ref-dict-input').click()">
+                                <span class="upload-icon">📄</span>
+                                <span class="upload-text">Click to select Reference Dictionary file</span>
+                                <span class="upload-subtext">.csv or .json files accepted</span>
+                                <input id="ref-dict-input" type="file" name="ref_dict" accept=".csv,.json"
+                                    style="display:none;" onchange="updateDirectoryFileLabel(this, 'ref-dict-label')">
+                            </div>
+                            <p id="ref-dict-label" class="file-label-text" style="display:none;"></p>
+                        </div>
+
+                    </div>
 
                         <div id="field-files" class="upload-field" style="display:none;">
                             <label class="field-label">Select Files</label>
@@ -178,7 +215,7 @@
                     <h2 class="card-title">Generate Report</h2>
                 </div>
                 <div class="card-body">
-                    <p class="card-subtitle">Run the SynthCard inference pipeline to generate congruence and coverage metrics.</p>
+                    <p class="card-subtitle">Run the ScoreCard inference pipeline to generate congruence and coverage metrics.</p>
 
                     <div class="card-actions">
                         <button id="generate-btn" class="btn btn-success">
@@ -208,10 +245,17 @@
             <div class="footer-middle">
                 <!-- Center footer text placeholder -->
             </div>
-            <div class="footer-right">
-                <!-- Contact placeholder -->
-                <span>Contact: Alexander R. Webber <a href="mailto:alexander.webber@fda.hhs.gov">alexander.webber@fda.hhs.gov</a></span>
-            </div>
+            <div class="footer-right footer-contacts">
+    <div class="footer-contact-line">
+        Contact: Alexander R. Webber
+        <a href="mailto:alexander.webber@fda.hhs.gov">alexander.webber@fda.hhs.gov</a>
+    </div>
+
+    <div class="footer-contact-line">
+        Seyed Kahaki
+        <a href="mailto:seyed.kahaki@fda.hhs.gov">seyed.kahaki@fda.hhs.gov</a>
+    </div>
+</div>
         </footer>
 
     </div><!-- end .page-wrapper -->
@@ -227,6 +271,16 @@
             const label = document.getElementById('file-label');
             if (input.files && input.files.length > 0) {
                 label.textContent = input.files.length + ' file(s) selected';
+                label.style.display = 'block';
+            } else {
+                label.style.display = 'none';
+            }
+        }
+
+        function updateDirectoryFileLabel(input, labelId) {
+            const label = document.getElementById(labelId);
+            if (input.files && input.files.length > 0) {
+                label.textContent = input.files[0].name;
                 label.style.display = 'block';
             } else {
                 label.style.display = 'none';

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card - Consistency Analysis</title>
+    <title>ScoreCard - Consistency Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .figure-container img {
@@ -93,7 +93,7 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
+                <h1>ScoreCard</h1>
                 <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
             </div>
             <div class="header-right">
@@ -121,28 +121,48 @@
                     <h2 class="card-title">Cross-Group Consistency Assessment</h2>
                 </div>
                 <div class="analysis-card-body">
-                    <p class="analysis-description">
-                        This analysis measures how consistent feature distributions are across different 
-                        subgroups (e.g., hospitals and scanner models). Lower variance and smaller 
-                        max-min differences indicate more consistent synthetic data quality across groups.
-                    </p>
+                    <div class="analysis-description">
+    <p>
+        This analysis measures how consistent feature distributions are across different
+        subgroups. Lower variance and smaller max-min differences indicate more consistent
+        synthetic data quality across groups.
+    </p>
+    <ul>
+        <li>
+            <strong>Variance of Group Means</strong> — Measures how much the per-subgroup
+            means vary from one another (computed with ddof=1); lower variance indicates
+            that the metric behaves similarly across all subgroups, suggesting more
+            equitable representation.
+        </li>
+        <li>
+            <strong>Max-Min Difference</strong> — The range between the highest and lowest
+            subgroup means; a smaller difference indicates that no single subgroup is
+            dramatically over- or under-represented relative to others.
+        </li>
+        <li>
+            <strong>ANOVA F-Statistic</strong> — The test statistic from a one-way ANOVA
+            across all subgroups; a higher F-statistic suggests that between-group
+            differences are large relative to within-group variation, indicating
+            inconsistency across subgroups.
+        </li>
+    </ul>
+</div>
+
 
                     <div class="two-column">
-                        <!-- Hospital Consistency -->
                         <div>
-                            <h3 style="margin-bottom: 0.75rem; color: #334155;">Hospital</h3>
+                            <h3 style="margin-bottom: 0.75rem; color: #334155;">Race</h3>
                             <div class="figure-container">
-                                <img src="{{ url_for('static', filename='outputs/' + consistency_hospital_fig) }}" 
-                                     alt="Consistency by Hospital">
+                                <img src="{{ url_for('static', filename='outputs/' + consistency_race_fig) }}" 
+                                     alt="Consistency by Race">
                             </div>
                         </div>
 
-                        <!-- Scanner Consistency -->
                         <div>
-                            <h3 style="margin-bottom: 0.75rem; color: #334155;">Scanner Model</h3>
+                            <h3 style="margin-bottom: 0.75rem; color: #334155;">Vendor</h3>
                             <div class="figure-container">
-                                <img src="{{ url_for('static', filename='outputs/' + consistency_scanner_fig) }}" 
-                                     alt="Consistency by Scanner Model">
+                                <img src="{{ url_for('static', filename='outputs/' + consistency_vendor_fig) }}" 
+                                     alt="Consistency by Vendor Model">
                             </div>
                         </div>
                     </div>

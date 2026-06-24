@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card - Results Overview</title>
+    <title>ScoreCard - Results Overview</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* ===== Collapsible Card Styles (kept for reference) ===== */
@@ -181,11 +181,11 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
+                <h1>ScoreCard</h1>
                 <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
             </div>
             <div class="header-right">
-                <span class="header-placeholder"><a href="https://www.github.com/DIDSR/">github.com/DIDSR/</a></span>
+                <span class="header-placeholder"><a href="https://www.github.com/DIDSR/ScoreCard">github.com/DIDSR/ScoreCard</a></span>
             </div>
         </header>
 
@@ -194,7 +194,7 @@
 
             <!-- Page title row -->
             <div class="results-page-title">
-                <h2>Real & Synthetic Feature Extraction Results</h2>
+                <h2>Real & Synthetic Dimensions</h2>
                 <div class="results-job-row">
                     <p class="results-job-id">Job ID: <code>{{ job_id }}</code></p>
                     <a href="{{ url_for('download_results', job_id=job_id) }}" class="btn btn-primary">
@@ -256,7 +256,7 @@
                         <span class="card-step step-consistency">Consistency</span>
                     </div>
                     <div class="nav-card-body">
-                        <p>Measure how consistent feature quality is across subgroups (e.g. hospital and scanner model).</p>
+                        <p>Measure how consistent feature quality is across subgroups.</p>
                         <div class="nav-card-footer">
                             <span class="nav-link-text">View Full Consistency Report →</span>
                         </div>

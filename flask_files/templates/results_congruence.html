@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card - Congruence Analysis</title>
+    <title>ScoreCard - Congruence Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .figure-container img {
@@ -81,7 +81,7 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
+                <h1>ScoreCard</h1>
                 <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
             </div>
             <div class="header-right">
@@ -109,12 +109,37 @@
                     <h2 class="card-title">Real vs Synthetic Statistical Congruence</h2>
                 </div>
                 <div class="analysis-card-body">
-                    <p class="analysis-description">
-                        This report presents quantitative measures and visualizations of how congruent 
-                        (statistically similar) the synthetic dataset is to the real dataset. It typically 
-                        includes metrics and plots that summarize agreement in feature relationships, 
-                        moments, or divergence measures between the two distributions.
-                    </p>
+                    <div class="analysis-description">
+    <p>
+        This report presents quantitative measures and visualizations of how congruent
+        (statistically similar) the synthetic dataset is to the real dataset. It typically
+        includes metrics and plots that summarize agreement in feature relationships,
+        moments, or divergence measures between the two distributions.
+    </p>
+    <ul>
+        <li>
+            <strong>Jensen-Shannon Divergence (JSD)</strong> — A symmetric, bounded measure
+            of the difference between the probability distributions of real and synthetic
+            features; values closer to 0 indicate that the two distributions are more
+            similar.
+        </li>
+        <li>
+            <strong>Earth Mover's Distance (EMD) / Wasserstein Distance</strong> — Quantifies
+            the minimum "work" required to transform the synthetic feature distribution into
+            the real feature distribution; lower values indicate that the two distributions
+            are more closely aligned, with less distributional shift between real and
+            synthetic data.
+        </li>
+        <li>
+            <strong>Cosine Similarity</strong> — Measures the angular similarity between
+            the real and synthetic feature vectors; values closer to 1 indicate that the
+            two datasets point in the same direction in feature space, implying strong
+            directional agreement.
+        </li>
+        
+    </ul>
+</div>
+
 
                     <div class="figure-container">
                         <img src="{{ url_for('static', filename='outputs/' + congruence_fig) }}" alt="Congruence Analysis Report">

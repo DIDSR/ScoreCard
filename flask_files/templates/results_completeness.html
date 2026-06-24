@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Synth Card - Completeness Analysis</title>
+    <title>ScoreCard - Completeness Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .figure-container img {
@@ -81,7 +81,7 @@
                 <span class="header-placeholder">Logo</span>
             </div>
             <div class="header-center">
-                <h1>Synth Card</h1>
+                <h1>ScoreCard</h1>
                 <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
             </div>
             <div class="header-right">
@@ -109,11 +109,28 @@
                     <h2 class="card-title">Dataset Completeness Assessment</h2>
                 </div>
                 <div class="analysis-card-body">
-                    <p class="analysis-description">
-                        This analysis evaluates how complete the datasets are by measuring missing values 
-                        and the fill rate of metadata fields.
-                        Higher completeness indicates fewer missing values in critical fields.
-                    </p>
+                    <div class="analysis-description">
+    <p>
+        This analysis evaluates how complete the datasets are by measuring missing values
+        and the fill rate of metadata fields.
+        Higher completeness indicates fewer missing values in critical fields.
+    </p>
+    <ul>
+        <li>
+            <strong>Missing Data Percentage</strong> — The proportion of all values across
+            the entire dataset that are missing (NaN).
+        </li>
+        <li>
+            <strong>Required Fields Completeness</strong> — The fill rate (as a percentage)
+            specifically for the fields designated as required.
+        </li>
+        <li>
+            <strong>Per-Field Completeness</strong> — A field-level breakdown reporting the
+            percentage of non-missing values for each required column individually.
+        </li>
+    </ul>
+</div>
+
 
                     <div class="figure-container">
                         <img src="{{ url_for('static', filename='outputs/' + completeness_fig) }}" alt="Completeness Analysis Report">
