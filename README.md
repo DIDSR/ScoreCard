@@ -22,19 +22,19 @@ For more information, and technical questions please contact: **[Seyed.Kahaki@fd
 
 The SMD ScoreCard evaluates synthetic medical data across the following seven dimensions:
 
-1. [**Congruence**](https://github.com/DIDSR/ScoreCard/notebooks/01_Congruence.ipynb) — Measures the degree to which the distribution of synthetic data aligns with the distribution of real patient data (e.g., using Fréchet Inception Distance, Cosine Similarity, Jensen-Shannon Divergence).
+1. [**Congruence**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/01_Congruence.ipynb) — Measures the degree to which the distribution of synthetic data aligns with the distribution of real patient data (e.g., using Fréchet Inception Distance, Cosine Similarity, Jensen-Shannon Divergence).
 
-2. [**Coverage**](https://github.com/DIDSR/ScoreCard/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, range, and novelty inherent in patient data (e.g., using Convex Hull Volume, Recall, Vendi Score, Entropy).
+2. [**Coverage**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, range, and novelty inherent in patient data (e.g., using Convex Hull Volume, Recall, Vendi Score, Entropy).
 
 3. **Constraint** — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
 
-4. [**Completeness**](https://github.com/DIDSR/ScoreCard/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage).
+4. [**Completeness**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage).
 
 5. **Compliance** — Reports adherence to privacy standards, format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using Differential Privacy Score, K-Anonymity Level, Re-identification Risk metrics).
 
 6. **Comprehension** — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
 
-7. [**Consistency**](https://github.com/DIDSR/ScoreCard/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
+7. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
 
 ---
 
