@@ -91,11 +91,11 @@ def hist_analysis(results_dir="./data/features"):
 
     return fig_hist, None
 
-def coverage_analysis(results_dir='./data/features'):
+def coverage_analysis(results_dir='./data/features', real_features='real_patch_appearance_features.npz', synth_features='kde_patch_appearance_features.npz'):
     from src.visualization import create_coverage_barplot
 
-    real_features                    = os.path.join(results_dir, 'real_patch_appearance_features.npz')
-    synth_features                   = os.path.join(results_dir, 'static_patch_appearance_features.npz')
+    real_features                    = os.path.join(results_dir, real_features)
+    synth_features                   = os.path.join(results_dir, synth_features)
 
     real_features_list               = []
     synth_features_list              = []
@@ -122,11 +122,11 @@ def coverage_analysis(results_dir='./data/features'):
     return fig_coverage
 
 
-def congruence_analysis(results_dir='./data/features'):
+def congruence_analysis(results_dir='./data/features', real_features='real_patch_appearance_features.npz', synth_features='kde_patch_appearance_features.npz'):
     from src.visualization import create_congruence_barplot
 
-    real_features        = os.path.join(results_dir, 'real_patch_appearance_features.npz')
-    synth_features       = os.path.join(results_dir, 'static_patch_appearance_features.npz')
+    real_features        = os.path.join(results_dir, real_features)
+    synth_features       = os.path.join(results_dir, synth_features)
 
     real_features_list   = []
     synth_features_list  = []

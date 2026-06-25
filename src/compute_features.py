@@ -142,7 +142,9 @@ def compute_nucleus_appearance_features(image, mask):
 
     return features
 
-def compute_patch_appearance_features(image):
+def compute_patch_appearance_features(image, switches):
+    features = {}
+
     if len(image.shape) == 3:
         rgb       = image.astype(np.float32) / 255.0
         gray      = color.rgb2gray(image)
@@ -151,51 +153,52 @@ def compute_patch_appearance_features(image):
         gray      = image
         has_color = False
 
-    gray     = (gray - gray.min()) / (gray.max() - gray.min() + 1e-10)
-    features = {
-                'mean_intensity': np.mean(gray),
-               }
+    gray                       = (gray - gray.min()) / (gray.max() - gray.min() + 1e-10)
+    gray_uint8                 = (gray * 255).astype(np.uint8)
+    distances                  = [1, 2, 3]
+    angles                     = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+    
+    if switches['mean_intensity'] == True:
+        features['mean_intensity'] = np.mean(gray)
 
-    gray_uint8 = (gray * 255).astype(np.uint8)
-    distances  = [1, 2, 3]
-    angles     = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+    if switches['glcm'] == True: 
+        try:
+            glcm = feature.graycomatrix(gray_uint8, 
+                                        distances = distances, 
+                                        angles    = angles,
+                                        levels    = 256, 
+                                        symmetric = True, 
+                                        normed    = True
+                                        )
 
-    try:
-        glcm = feature.graycomatrix(gray_uint8, 
-                                    distances = distances, 
-                                    angles    = angles,
-                                    levels    = 256, 
-                                    symmetric = True, 
-                                    normed    = True
-                                    )
+            features['glcm_contrast']    = np.mean(feature.graycoprops(glcm, 'contrast'))
+            features['glcm_homogeneity'] = np.mean(feature.graycoprops(glcm, 'homogeneity'))
+            features['glcm_energy']      = np.mean(feature.graycoprops(glcm, 'energy'))
+            features['glcm_correlation'] = np.mean(feature.graycoprops(glcm, 'correlation'))
+        except Exception:
+            features['glcm_contrast']    = np.nan
+            features['glcm_homogeneity'] = np.nan
+            features['glcm_energy']      = np.nan
+            features['glcm_correlation'] = np.nan
 
-        features['glcm_contrast']    = np.mean(feature.graycoprops(glcm, 'contrast'))
-        features['glcm_homogeneity'] = np.mean(feature.graycoprops(glcm, 'homogeneity'))
-        features['glcm_energy']      = np.mean(feature.graycoprops(glcm, 'energy'))
-        features['glcm_correlation'] = np.mean(feature.graycoprops(glcm, 'correlation'))
-    except Exception:
-        features['glcm_contrast']    = np.nan
-        features['glcm_homogeneity'] = np.nan
-        features['glcm_energy']      = np.nan
-        features['glcm_correlation'] = np.nan
+    if switches['rgb'] == True:
+        if has_color:
+            r                            = rgb[:, :, 0]
+            g                            = rgb[:, :, 1]
+            b                            = rgb[:, :, 2]
 
-    if has_color:
-        r                            = rgb[:, :, 0]
-        g                            = rgb[:, :, 1]
-        b                            = rgb[:, :, 2]
+            features['mean_r']           = np.mean(r)
+            features['mean_g']           = np.mean(g)
+            features['mean_b']           = np.mean(b)
 
-        features['mean_r']           = np.mean(r)
-        features['mean_g']           = np.mean(g)
-        features['mean_b']           = np.mean(b)
-
-    else:
-        color_keys = [
-            'mean_r', 
-            'mean_g', 
-            'mean_b'
-        ]
-        for k in color_keys:
-            features[k] = np.nan
+        else:
+            color_keys = [
+                'mean_r', 
+                'mean_g', 
+                'mean_b'
+            ]
+            for k in color_keys:
+                features[k] = np.nan
 
     return features
 
