@@ -45,12 +45,9 @@ In addition to quantitative evaluation, this toolbox supports generation of a st
 
 1. **General Information** — Dataset name, modality, size, labels, licensing, and point of contact.
 2. **Data Quality Evaluation (7 Cs)** — Quantitative results for each of the seven criteria.
-3. **Task-based Evaluation** — Performance metrics for specific downstream tasks.
-4. **Human-based Evaluation** — Results from qualitative reader studies and failure case analysis.
-5. **Ethical Considerations, Limitations & Recommendations** — Known biases, limitations, and best practices.
-6. **Dataset Usage** — Repository links, preprocessing requirements, and user documentation.
-7. **Training & Validation Process** — Description of the synthetic data generation pipeline.
-8. **Reference Dataset Information** — Key details of the patient dataset used for comparison.
+3. **Dataset Usage** — Repository links, preprocessing requirements, and user documentation.
+4. **Training & Validation Process** — Description of the synthetic data generation pipeline.
+5. **Reference Dataset Information** — Key details of the patient dataset used for comparison.
 
 ---
 
