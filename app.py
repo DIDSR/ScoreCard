@@ -216,9 +216,15 @@ def upload():
         flash('Invalid upload type.', 'error')
         return redirect(url_for('index'))
 
-    session['real_csv']  = real_csv
-    session['synth_csv'] = synth_csv
-    session['is_preset'] = (upload_type == 'preset')
+    session['analysis_congruence']   = request.form.get('analysis_congruence')   == 'on'
+    session['analysis_coverage']     = request.form.get('analysis_coverage')     == 'on'
+    session['analysis_completeness'] = request.form.get('analysis_completeness') == 'on'
+    session['analysis_consistency']  = request.form.get('analysis_consistency')  == 'on'
+    session['analysis_histogram']    = request.form.get('analysis_histogram')    == 'on'
+
+    session['real_csv']              = real_csv
+    session['synth_csv']             = synth_csv
+    session['is_preset']             = (upload_type == 'preset')
 
     try:
         real_df                                   = pd.read_csv(real_csv)
@@ -256,7 +262,17 @@ def generate_report():
     job_id = str(uuid.uuid4())
 
     with progress_lock:
-        progress_store[job_id] = {'status': 'processing', 'progress': 0, 'error': None}
+        progress_store[job_id] = {'status'  : 'processing', 
+                                  'progress': 0, 
+                                  'error'   : None,
+                                  'config'  : {
+                                               'congruence': session.get('analysis_congruence',     True),
+                                               'coverage': session.get('analysis_coverage',         True),
+                                               'completeness': session.get('analysis_completeness', True),
+                                               'consistency': session.get('analysis_consistency',   True),
+                                               'histogram': session.get('analysis_histogram',       True)
+                                              }
+                                }
 
     def run_inference(real_csv, synth_csv, is_preset):
         try:
@@ -329,21 +345,21 @@ def generate_report():
                     json.dump(serializable_metrics, f)
 
             with progress_lock:
-                progress_store[job_id] = {
-                                          'status': 'completed',
-                                          'progress': 100,
-                                          'output_dir': job_id
-                                          }
+                progress_store[job_id].update({
+                    'status'    : 'completed',
+                    'progress'  : 100,
+                    'output_dir': job_id
+                })
 
         except Exception as e:
             print(f"[Job {job_id}] Error: {e}")
 
             with progress_lock:
-                progress_store[job_id] = {
-                                          'status': 'error',
-                                          'progress': 0,
-                                          'error': str(e)
-                                         }
+                progress_store[job_id].update({
+                                               'status'  : 'error',
+                                               'progress': 0,
+                                               'error'   : str(e)
+                                              })
 
     is_preset = session.get('is_preset', False)
     thread    = threading.Thread(target=run_inference, args=(real_csv, synth_csv, is_preset))
@@ -366,6 +382,8 @@ def results(job_id):
     if not job or job['status'] != 'completed':
         return redirect(url_for('index'))
 
+    config            = job.get('config', {})
+
     histo_fig         = f"{job_id}/histo_fig.png"
     coverage_fig      = f"{job_id}/coverage_fig.png"
     congruence_fig    = f"{job_id}/congruence_fig.png"
@@ -379,11 +397,12 @@ def results(job_id):
             metrics_data = json.load(f)
 
     return render_template('results.html',
-                           job_id=job_id,
-                           histo_fig=histo_fig,
-                           coverage_fig=coverage_fig,
-                           congruence_fig=congruence_fig,
-                           metrics_data=metrics_data
+                           job_id         = job_id,
+                           histo_fig      = histo_fig,
+                           coverage_fig   = coverage_fig,
+                           congruence_fig = congruence_fig,
+                           metrics_data   = metrics_data,
+                           config         = config
                            )
 
 
@@ -506,7 +525,6 @@ def download_results(job_id):
                 os.remove(zip_buffer)
             except Exception:
                 pass
-
 
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):

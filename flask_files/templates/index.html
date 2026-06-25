@@ -143,6 +143,27 @@
                             <p id="file-label" class="file-label-text" style="display:none;"></p>
                         </div>
 
+                        <div class="upload-field" style="display: block; margin-bottom: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
+                        <label class="field-label">Select Analyses to Run</label>
+                        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="analysis_congruence" {% if session.get('analysis_congruence', True) %}checked{% endif %}> Congruence
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="analysis_coverage" {% if session.get('analysis_coverage', True) %}checked{% endif %}> Coverage
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="analysis_completeness" {% if session.get('analysis_completeness', True) %}checked{% endif %}> Completeness
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="analysis_consistency" {% if session.get('analysis_consistency', True) %}checked{% endif %}> Consistency
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="analysis_histogram" {% if session.get('analysis_histogram', True) %}checked{% endif %}> Histograms
+                        </label>
+                        </div>
+                        </div>
+
                         <div class="card-actions">
                             <button type="submit" class="btn btn-primary">
                                 <span>📥</span> Load Images

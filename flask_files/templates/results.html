@@ -113,6 +113,18 @@
             border-color: #6366f1;
         }
 
+        .analysis-nav-card.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(100%);
+            background: #f1f5f9;
+            box-shadow: none;
+            border-color: #e2e8f0;
+        }
+        .analysis-nav-card.disabled .nav-link-text {
+            color: #94a3b8;
+        }
+
         /* === UPDATED: Only centered pill, no title text === */
         .nav-card-header {
             padding: 2rem 1.5rem 1.5rem;
@@ -211,7 +223,7 @@
             <!-- ===== Navigation Cards to Individual Analysis Pages ===== -->
             <div class="analysis-nav-grid">
                 <!-- Congruence Analysis -->
-                <a href="{{ url_for('results_congruence', job_id=job_id) }}" class="analysis-nav-card">
+                <a href="{{ url_for('results_congruence', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('congruence', True) %}disabled{% endif %}">
                     <div class="nav-card-header">
                         <span class="card-step step-congruence">Congruence</span>
                     </div>
@@ -224,7 +236,7 @@
                 </a>
 
                 <!-- Coverage Analysis -->
-                <a href="{{ url_for('results_coverage', job_id=job_id) }}" class="analysis-nav-card">
+                <a href="{{ url_for('results_coverage', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('coverage', True) %}disabled{% endif %}">
                     <div class="nav-card-header">
                         <span class="card-step step-coverage">Coverage</span>
                     </div>
@@ -237,7 +249,7 @@
                 </a>
 
                 <!-- Completeness Analysis -->
-                <a href="{{ url_for('results_completeness', job_id=job_id) }}" class="analysis-nav-card">
+                <a href="{{ url_for('results_completeness', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('completeness', True) %}disabled{% endif %}">
                     <div class="nav-card-header">
                         <span class="card-step step-completeness">Completeness</span>
                     </div>
@@ -249,9 +261,8 @@
                     </div>
                 </a>
 
-            
                 <!-- Consistency Analysis -->
-                <a href="{{ url_for('results_consistency', job_id=job_id) }}" class="analysis-nav-card">
+                <a href="{{ url_for('results_consistency', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('consistency', True) %}disabled{% endif %}">
                     <div class="nav-card-header">
                         <span class="card-step step-consistency">Consistency</span>
                     </div>
@@ -264,7 +275,7 @@
                 </a>
 
                 <!-- Histogram Analysis -->
-                <a href="{{ url_for('results_histogram', job_id=job_id) }}" class="analysis-nav-card">
+                <a href="{{ url_for('results_histogram', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('histogram', True) %}disabled{% endif %}">
                     <div class="nav-card-header">
                         <span class="card-step step-histogram">Histograms</span>
                     </div>
@@ -275,7 +286,6 @@
                         </div>
                     </div>
                 </a>
-
             </div>
 
             <!-- ===== Back to Home action ===== -->
