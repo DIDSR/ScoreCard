@@ -8,7 +8,7 @@
 
 ## Overview
 
-**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data.
+**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)](https://www.nature.com/articles/s44172-025-00450-1).
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
@@ -61,8 +61,11 @@ In addition to quantitative evaluation, this toolbox supports generation of a st
 
 - Ensure you are using ``` Python 3.12 ```
 - Install requirements: ``` pip install -r requirements.txt ```
+- Use the IPython notebooks in `notebooks` to visualize and analyze the pre-extracted features 
 - Run the Flask application:  ``` python app.py ```
-- Navigate to: ``` http://localhost:5050 ```
+- Navigate to: ``` http://localhost:5050 ``` in a browser to access the application
+
+*Note for the Flask application: The image files specified in `data/real_patch_appearance.csv` and `data/static_patch_appearance.csv` need to be made available in the appropriate paths outlined in the csv for the Preset Dataset option to be used.*
 
 ---
 
