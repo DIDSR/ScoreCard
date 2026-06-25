@@ -26,15 +26,16 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 2. [**Coverage**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, range, and novelty inherent in patient data (e.g., using Convex Hull Volume, Recall, Vendi Score, Entropy).
 
-3. **Constraint** — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
+3. [**Completeness**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage).
 
-4. [**Completeness**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage).
+4. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
 
-5. **Compliance** — Reports adherence to privacy standards, format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using Differential Privacy Score, K-Anonymity Level, Re-identification Risk metrics).
+5. **Comprehension** — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
 
-6. **Comprehension** — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
+6. **Constraint** — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
+   
+7. **Compliance** — Reports adherence to privacy standards, format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using Differential Privacy Score, K-Anonymity Level, Re-identification Risk metrics).
 
-7. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
 
 ---
 
