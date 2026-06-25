@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
- <img src="imgs/ScoreCard.png">
+ <img src="ScoreCard.png">
 </p>
 
 ## Overview
