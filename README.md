@@ -14,7 +14,7 @@ Synthetic medical data holds significant promise for advancing AI development in
 
 This toolbox provides a **quantitative and reproducible** approach to evaluating Synthetic Medical Data across seven clinically relevant criteria (the **7 Cs**), and supports the generation of a structured **Scorecard** to accompany synthetic datasets.
 
-For more information, and technical questions please contact: **[Seyed.Kahaki@fda.hhs.gov](mailto:Seyed.Kahaki@fda.hhs.gov) or [Alexander.Webber@fda.hhs.gov](mailto:Alexander.Webber@fda.hhs.gov)**
+For more information, and technical questions please contact: **[Seyed.Kahaki@fda.hhs.gov](mailto:Seyed.Kahaki@fda.hhs.gov), [Alexander.Webber@fda.hhs.gov](mailto:Alexander.Webber@fda.hhs.gov), or [Tahsin.Rahman@fda.hhs.gov](mailto:Tahsin.Rahman@fda.hhs.gov)**
 
 ---
 
@@ -71,7 +71,7 @@ In addition to quantitative evaluation, this toolbox supports generation of a st
 
 ## Contact
 
-For any inquiries or suggestions, please contact Seyed Kahaki, Elim Thompson, or Aldo Badano either via this GitHub repo or via email (seyed.kahaki@fda.hhs.gov, Alexander.Webber@fda.hhs.gov, Tahsin.Rahman@fda.hhs.gov,  yeelamelim.thompson@fda.hhs.gov or aldo.badano@fda.hhs.gov).
+For any inquiries or suggestions, please contact Seyed Kahaki, Elim Thompson, or Aldo Badano either via this GitHub repo or via email (seyed.kahaki@fda.hhs.gov, yeelamelim.thompson@fda.hhs.gov or aldo.badano@fda.hhs.gov).
 
 ---
 
