@@ -197,17 +197,21 @@ def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
     return comp_df, fig
 
 
-def consistency_analysis(csv_path, group_by="Race", metric_cols=None, label=""):
+def consistency_analysis(real_csv, synth_csv, group_by="Race", metric_cols=None, label=""):
     from src.visualization import create_consistency_barplot
 
-    df = pd.read_csv(csv_path)
+    real_df  = pd.read_csv(real_csv)
+    synth_df = pd.read_csv(synth_csv)
 
-    df = df.replace(r'^\s*$', np.nan, regex=True)
+    real_df.columns  = real_df.columns.str.strip()
+    synth_df.columns = synth_df.columns.str.strip()
 
-    if group_by not in df.columns:
-        raise ValueError(f"group_by column '{group_by}' not found in CSV.")
+    for col_name, df in [("real_csv", real_df), ("synth_csv", synth_df)]:
+        if group_by not in df.columns:
+            raise ValueError(f"group_by column '{group_by}' not found in {col_name}.")
 
-    df = df.dropna(subset=[group_by])
+    real_df  = real_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
+    synth_df = synth_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
 
     if metric_cols is None:
         default_metrics = [
@@ -218,27 +222,36 @@ def consistency_analysis(csv_path, group_by="Race", metric_cols=None, label=""):
             'compressionratio',
             'exposure time'
         ]
-        metric_cols = [c for c in default_metrics if c in df.columns]
+        metric_cols = [
+            c for c in default_metrics
+            if c in real_df.columns and c in synth_df.columns
+        ]
 
     if not metric_cols:
-        raise ValueError("No valid metric_cols found.")
+        raise ValueError("No valid metric_cols found in both CSVs.")
 
     results = []
+
     for metric in metric_cols:
-        if metric not in df.columns:
-            continue
+        if metric in real_df.columns:
+            real_group_data = {
+                str(g): group[metric].dropna().values
+                for g, group in real_df.groupby(group_by)
+                if len(group[metric].dropna()) > 0
+            }
+            if len(real_group_data) >= 2:
+                real_cons = compute_consistency(real_group_data, label=f"{label}_real_{metric}")
+                results.append({'Dataset': 'Real', 'Group_By': group_by, 'Metric': metric, **real_cons})
 
-        group_data = {
-            str(g): group[metric].dropna().values
-            for g, group in df.groupby(group_by)
-            if len(group[metric].dropna()) > 0
-        }
-
-        if len(group_data) < 2:
-            continue
-
-        cons = compute_consistency(group_data, label=f"{label}_{metric}")
-        results.append({'Group_By': group_by, 'Metric': metric, **cons})
+        if metric in synth_df.columns:
+            synth_group_data = {
+                str(g): group[metric].dropna().values
+                for g, group in synth_df.groupby(group_by)
+                if len(group[metric].dropna()) > 0
+            }
+            if len(synth_group_data) >= 2:
+                synth_cons = compute_consistency(synth_group_data, label=f"{label}_synth_{metric}")
+                results.append({'Dataset': 'Synth', 'Group_By': group_by, 'Metric': metric, **synth_cons})
 
     if not results:
         return pd.DataFrame(), None
@@ -251,3 +264,4 @@ def consistency_analysis(csv_path, group_by="Race", metric_cols=None, label=""):
         fig = None
 
     return cons_df, fig
+

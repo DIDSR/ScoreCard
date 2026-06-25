@@ -540,18 +540,15 @@ def create_completeness_barplot(
 
     return fig
 
-def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
+def create_consistency_barplot(cons_df: pd.DataFrame, group_by):
     apply_large_plot_style()
 
     if cons_df.empty:
         fig, ax = plt.subplots(figsize=(12, 5), dpi=PLOT_DPI)
         ax.text(
-            0.5,
-            0.5,
+            0.5, 0.5,
             "No consistency data available",
-            ha="center",
-            va="center",
-            fontsize=18
+            ha="center", va="center", fontsize=18
         )
         ax.axis("off")
         return fig
@@ -562,22 +559,19 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
         "ANOVA_F_statistic"
     ]
 
+    id_vars = ["Metric", "Dataset"] if "Dataset" in cons_df.columns else ["Metric"]
+
     df_melt = cons_df.melt(
-        id_vars=["Metric"],
+        id_vars=id_vars,
         value_vars=metrics_to_plot,
         var_name="Consistency_Metric",
         value_name="Value"
     )
 
-    n_metrics = cons_df["Metric"].nunique()
+    n_metrics  = cons_df["Metric"].nunique()
     fig_height = max(20, 1.15 * n_metrics + 9)
 
-    fig, axes = plt.subplots(
-        3,
-        1,
-        figsize=(18, fig_height),
-        dpi=PLOT_DPI
-    )
+    fig, axes = plt.subplots(3, 1, figsize=(18, fig_height), dpi=PLOT_DPI)
 
     for ax, cmetric in zip(axes, metrics_to_plot):
         data = df_melt[df_melt["Consistency_Metric"] == cmetric]
@@ -586,20 +580,19 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
             data=data,
             y="Metric",
             x="Value",
+            hue="Dataset" if "Dataset" in data.columns else None,
             ax=ax,
-            palette="coolwarm",
+            palette="Set2",
             edgecolor="black",
             linewidth=0.7
         )
 
         ax.set_title(
             cmetric.replace("_", " "),
-            fontsize=22,
-            fontweight="bold",
-            pad=14
+            fontsize=22, fontweight="bold", pad=14
         )
         ax.set_xlabel("Value", fontsize=17, labelpad=10)
-        ax.set_ylabel("")
+        ax.set_ylabel("", fontsize=17)
         ax.tick_params(axis="y", labelsize=14)
         ax.tick_params(axis="x", labelsize=14)
         ax.grid(True, axis="x", alpha=0.3)
@@ -609,11 +602,12 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by="hospital"):
 
         ax.margins(x=0.15)
 
+        if "Dataset" in data.columns:
+            ax.legend(title="Dataset", fontsize=13, title_fontsize=14)
+
     fig.suptitle(
-        f"Consistency across {group_by}",
-        fontsize=30,
-        fontweight="bold",
-        y=0.995
+        f"Consistency across {group_by}: Real vs. Synthetic",
+        fontsize=30, fontweight="bold", y=0.995
     )
 
     fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.2)

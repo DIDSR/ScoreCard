@@ -295,22 +295,6 @@ def generate_report():
             congruence_fig.savefig(os.path.join(job_output_dir, 'congruence_fig.png'))
 
             try:
-                real_meta_csv  = real_csv.replace('.csv', '_with_metadata.csv')
-                synth_meta_csv = synth_csv.replace('.csv', '_with_metadata.csv')
-
-                if not os.path.exists(real_meta_csv):
-                    real_meta_csv  = real_csv
-                if not os.path.exists(synth_meta_csv):
-                    synth_meta_csv = synth_csv
-
-                comp_df, comp_fig = completeness_analysis(
-                                                            real_meta_csv,
-                                                            synth_meta_csv,
-                                                            label="report"
-                                                         )
-                if comp_fig:
-                    comp_fig.savefig(os.path.join(job_output_dir, 'completeness_fig.png'))
-
                 cons_df_race, cons_fig_race = consistency_analysis(
                                                                     real_meta_csv,
                                                                     group_by="Race",
@@ -319,20 +303,10 @@ def generate_report():
                 if cons_fig_race:
                     cons_fig_race.savefig(os.path.join(job_output_dir, 'consistency_race_fig.png'))
 
-                cons_df_vendor, cons_fig_vendor = consistency_analysis(
-                    real_meta_csv,
-                    group_by="vendor",
-                    label="report"
-                )
-                if cons_fig_vendor:
-                    cons_fig_vendor.savefig(os.path.join(job_output_dir, 'consistency_vendor_fig.png'))
-
                 if comp_df is not None and not comp_df.empty:
                     comp_df.to_json(os.path.join(job_output_dir,      'completeness.json'),         orient='records')
                 if cons_df_hosp is not None and not cons_df_hosp.empty:
                     cons_df_hosp.to_json(os.path.join(job_output_dir, 'consistency_race.json'), orient='records')
-                if cons_df_scan is not None and not cons_df_scan.empty:
-                    cons_df_scan.to_json(os.path.join(job_output_dir, 'consistency_vendor.json'),  orient='records')
 
             except Exception as e:
                 print(f"[Job {job_id}] Completeness/Consistency analysis skipped or failed: {e}")
