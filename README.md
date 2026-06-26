@@ -8,7 +8,7 @@
 
 ## Overview
 
-**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation framework** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)].
+**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation approach** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)].
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
@@ -18,7 +18,7 @@ For more information, and technical questions please contact: **[Seyed.Kahaki@fd
 
 ---
 
-## The 7 Cs Framework
+## The 7 Cs Approach
 
 The SMD ScoreCard evaluates synthetic medical data across the following seven dimensions:
 
@@ -34,7 +34,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 6. **Constraint** — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
    
-7. **Compliance** — Reports adherence to privacy standards, format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using Differential Privacy Score, K-Anonymity Level, Re-identification Risk metrics).
+7. **Compliance** — Reports adherence to format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using K-Anonymity Level, Re-identification Risk metrics).
 
 
 ---
