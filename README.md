@@ -8,17 +8,17 @@
 
 ## Overview
 
-**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **7 Cs evaluation approach** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)].
+**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **synthetic data evaluation approach** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)].
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
-This toolbox provides a **quantitative and reproducible** approach to evaluating Synthetic Medical Data across seven clinically relevant criteria (the **7 Cs**), and supports the generation of a structured **Scorecard** to accompany synthetic datasets.
+This toolbox provides a **quantitative and reproducible** approach to evaluating Synthetic Medical Data across seven relevant criteria, and supports the generation of a structured **Scorecard** to accompany synthetic datasets.
 
 For more information, and technical questions please contact: **[Seyed.Kahaki@fda.hhs.gov](mailto:Seyed.Kahaki@fda.hhs.gov), [Alexander.Webber@fda.hhs.gov](mailto:Alexander.Webber@fda.hhs.gov), or [Tahsin.Rahman@fda.hhs.gov](mailto:Tahsin.Rahman@fda.hhs.gov)**
 
 ---
 
-## The 7 Cs Approach
+## The Synthetic Data Evaluation Approach
 
 The SMD ScoreCard evaluates synthetic medical data across the following seven dimensions:
 
@@ -44,7 +44,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 In addition to quantitative evaluation, this toolbox supports generation of a structured **SMD Scorecard** report containing the following sections:
 
 1. **General Information** — Dataset name, modality, size, labels, licensing, and point of contact.
-2. **Data Quality Evaluation (7 Cs)** — Quantitative results for each of the seven criteria.
+2. **Data Quality Evaluation** — Quantitative results for each of the seven criteria.
 3. **Dataset Usage** — Repository links, preprocessing requirements, and user documentation.
 4. **Training & Validation Process** — Description of the synthetic data generation pipeline.
 5. **Reference Dataset Information** — Key details of the patient dataset used for comparison.
