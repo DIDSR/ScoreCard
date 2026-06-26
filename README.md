@@ -33,8 +33,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 5. **Comprehension** — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
 
 6. **Constraint** — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
-   
-7. **Compliance** — Reports adherence to format guidelines (e.g., DICOM), and relevant local and international requirements (e.g., using K-Anonymity Level, Re-identification Risk metrics).
+
 
 
 ---
