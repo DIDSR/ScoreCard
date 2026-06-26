@@ -122,7 +122,12 @@ def coverage_analysis(results_dir='./data/features', real_features='real_patch_a
     return fig_coverage
 
 
-def congruence_analysis(results_dir='./data/features', real_features='real_patch_appearance_features.npz', synth_features='kde_patch_appearance_features.npz'):
+def congruence_analysis(metrics_to_compute,
+                        results_dir    = './data/features', 
+                        real_features  = 'real_patch_appearance_features.npz', 
+                        synth_features = 'kde_patch_appearance_features.npz'
+                        ):
+
     from src.visualization import create_congruence_barplot
 
     real_features        = os.path.join(results_dir, real_features)
@@ -137,24 +142,24 @@ def congruence_analysis(results_dir='./data/features', real_features='real_patch
     real_df              = combine_features(real_features_list)
     synth_df             = combine_features(synth_features_list)
 
-    congruence_results = {}
-    feature_names      = real_df.columns.tolist()
+    congruence_results   = {}
+    feature_names        = real_df.columns.tolist()
 
     for feature in feature_names:
         r                           = real_df[feature].values
         s                           = synth_df[feature].values
-        congruence_results[feature] = compute_congruence(r, s, sampling=True, seed=42)
+        congruence_results[feature] = compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42)
 
     summary_list = []
 
     for feature, values in congruence_results.items():
         summary_list.append({
-            'Synthetic':         'Synth',
-            'Real':              'Real',
-            'Feature':           feature,
+            'Synthetic'        : 'Synth',
+            'Real'             : 'Real',
+            'Feature'          : feature,
             'Cosine_Similarity': values['cosine_similarity'],
-            'JSD':               values['jensen_shannon_divergence'],
-            'EMD_Wasserstein':   values['earth_movers_distance']
+            'JSD'              : values['jensen_shannon_divergence'],
+            'EMD_Wasserstein'  : values['earth_movers_distance']
         })
 
     congruence_df  = pd.DataFrame(summary_list)

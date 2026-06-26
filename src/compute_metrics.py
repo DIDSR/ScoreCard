@@ -38,20 +38,26 @@ def compute_coverage(df, label=""):
 
     return metrics
 
-def compute_congruence(r, s, sampling=True, seed=42):
-    r = normalize_congruence_features(r)
-    s = normalize_congruence_features(s)
+def compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42):
+    return_metrics = {}
+    r              = normalize_congruence_features(r)
+    s              = normalize_congruence_features(s)
 
     if sampling:
         size = min(len(r), len(s))
         r    = random_sampling(r, size, replace=False, seed=seed)
         s    = random_sampling(s, size, replace=False, seed=seed)
 
-    return {
-        'cosine_similarity':         get_cosine_similarity(r, s),
-        'jensen_shannon_divergence': get_jensen_shannon_divergence(r, s),
-        'earth_movers_distance':     get_earth_movers_distance(r, s)
-    }
+    if metrics_to_compute['jsd']    == True:
+        return_metrics['jensen_shannon_divergence'] = get_jensen_shannon_divergence(r, s)
+
+    if metrics_to_compute['emd']    == True:
+        return_metrics['earth_movers_distance']     = get_earth_movers_distance(r, s)
+
+    if metrics_to_compute['cosine'] == True:
+        return_metrics['cosine_similarity']         = get_cosine_similarity(r, s)
+
+    return return_metrics
 
 def compute_completeness(df, required_fields=None, label=""):
     if df is None or len(df) == 0:

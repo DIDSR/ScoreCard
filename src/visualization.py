@@ -1,6 +1,6 @@
-import numpy              as np
-import pandas             as pd
-import seaborn            as sns
+import numpy              as     np
+import pandas             as     pd
+import seaborn            as     sns
 
 from   src.routines       import bootstrap_ci
 from   scipy.stats        import gaussian_kde
@@ -249,9 +249,9 @@ def create_coverage_barplot(coverage_df: pd.DataFrame):
 
     df_plot = coverage_df.reset_index().rename(columns={"index": "Dataset"})
     df_melt = df_plot.melt(
-        id_vars="Dataset",
-        var_name="Metric",
-        value_name="Value"
+        id_vars    = "Dataset",
+        var_name   = "Metric",
+        value_name = "Value"
     )
 
     n = len(metrics)
@@ -286,9 +286,9 @@ def create_coverage_barplot(coverage_df: pd.DataFrame):
             pad=14
         )
         ax.set_xlabel("")
-        ax.set_ylabel("Value", fontsize=17, labelpad=10)
-        ax.tick_params(axis="x", labelsize=15, rotation=0)
-        ax.tick_params(axis="y", labelsize=14)
+        ax.set_ylabel("Value",   fontsize  = 17,  labelpad= 10)
+        ax.tick_params(axis="x", labelsize = 15,  rotation= 0)
+        ax.tick_params(axis="y", labelsize = 14)
 
         for container in ax.containers:
             ax.bar_label(container, fmt="%.4f", padding=5, fontsize=13)
@@ -297,29 +297,25 @@ def create_coverage_barplot(coverage_df: pd.DataFrame):
 
     fig.suptitle(
         "Real vs Synthetic Coverage",
-        fontsize=28,
-        fontweight="bold",
-        y=0.995
+        fontsize   = 28,
+        fontweight = "bold",
+        y          = 0.995
     )
 
     fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.0)
 
     return fig
 
-def create_congruence_barplot(congruence_df: pd.DataFrame):
+def create_congruence_barplot(congruence_df: pd.DataFrame, metrics_to_compute):
     apply_large_plot_style()
 
-    metrics = [
-        "JSD",
-        "EMD_Wasserstein",
-        "Cosine_Similarity"
-    ]
+    metrics = list(metrics_to_compute)
 
     df_melt = congruence_df.melt(
-        id_vars=["Feature"],
-        value_vars=metrics,
-        var_name="Metric",
-        value_name="Value"
+        id_vars    = ["Feature"],
+        value_vars = metrics,
+        var_name   = "Metric",
+        value_name = "Value"
     )
 
     n_features = congruence_df["Feature"].nunique()
