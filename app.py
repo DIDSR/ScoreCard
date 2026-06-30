@@ -7,35 +7,38 @@ import json
 import warnings
 import matplotlib
 
-import matplotlib.pyplot as plt
-import numpy             as np
-import pandas            as pd
+import matplotlib.pyplot   as plt
+import numpy               as np
+import pandas              as pd
 
 
 
-from werkzeug.utils      import secure_filename
-from src.generic_predict import produce_output
+from   werkzeug.utils      import secure_filename
+from   src.generic_predict import produce_output
 
-from flask               import (
-                                 Flask,
-                                 render_template,
-                                 request,
-                                 redirect,
-                                 url_for,
-                                 flash,
-                                 send_from_directory,
-                                 jsonify,
-                                 session
-                                )
-from src.utils           import (
-                                 read_png,
-                                 create_image_df,
-                                 hist_analysis,
-                                 coverage_analysis,
-                                 congruence_analysis,
-                                 completeness_analysis,
-                                 consistency_analysis
-                                )
+from   flask               import (
+                                   Flask,
+                                   render_template,
+                                   request,
+                                   redirect,
+                                   url_for,
+                                   flash,
+                                   send_from_directory,
+                                   jsonify,
+                                   session
+                                  )
+from   src.utils           import (
+                                   read_png,
+                                   create_image_df,
+                                  )
+
+from   src.analyses        import (
+                                   hist_analysis,
+                                   coverage_analysis,
+                                   congruence_analysis,
+                                   completeness_analysis,
+                                   consistency_analysis
+                                  )       
 
 warnings.filterwarnings("ignore")
 matplotlib.use('Agg')

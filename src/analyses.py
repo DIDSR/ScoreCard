@@ -1,0 +1,214 @@
+import os
+
+import pandas                as     pd
+import numpy                 as     np
+
+from   src.feature_io        import load_features
+from   src.routines          import combine_features, filter_features
+from   src.compute_metrics   import (
+    compute_congruence, 
+    compute_coverage,
+    compute_completeness,
+    compute_consistency,
+    compute_constraint,
+)
+
+def hist_analysis(results_dir="./data/features"):
+    from src.visualization import print_histograms
+
+    real_features        = load_features(os.path.join(results_dir, 'real_patch_appearance_features.npz'))
+    synth_features       = load_features(os.path.join(results_dir, 'static_patch_appearance_features.npz'))
+
+    fig_hist             = print_histograms(real_features, synth_features)
+
+    return fig_hist, None
+
+def coverage_analysis(results_dir='./data/features', real_features='real_patch_appearance_features.npz', synth_features='kde_patch_appearance_features.npz'):
+    from src.visualization import create_coverage_barplot
+
+    real_features                    = os.path.join(results_dir, real_features)
+    synth_features                   = os.path.join(results_dir, synth_features)
+
+    real_features_list               = []
+    synth_features_list              = []
+
+    real_features_list.append(real_features)
+    synth_features_list.append(synth_features)
+
+    real_df                          = combine_features(real_features_list)
+    synth_df                         = combine_features(synth_features_list)
+
+    real_df, synth_df, kept_features = filter_features(real_df, synth_df, 0.5)
+    feature_names                    = [c for c in kept_features if c not in real_features]
+
+    real_features_coverage           = compute_coverage(real_df[feature_names],  "Real")
+    synth_features_coverage          = compute_coverage(synth_df[feature_names], "Synth")
+
+    coverage_df                      = pd.DataFrame({
+        'Real_Features':  real_features_coverage,
+        'Synth_Features': synth_features_coverage,
+    }).T
+
+    fig_coverage = create_coverage_barplot(coverage_df)
+
+    return fig_coverage
+
+
+def congruence_analysis(metrics_to_compute,
+                        results_dir    = './data/features', 
+                        real_features  = 'real_patch_appearance_features.npz', 
+                        synth_features = 'kde_patch_appearance_features.npz'
+                        ):
+
+    from src.visualization import create_congruence_barplot
+
+    real_features        = os.path.join(results_dir, real_features)
+    synth_features       = os.path.join(results_dir, synth_features)
+
+    real_features_list   = []
+    synth_features_list  = []
+
+    real_features_list.append(real_features)
+    synth_features_list.append(synth_features)
+
+    real_df              = combine_features(real_features_list)
+    synth_df             = combine_features(synth_features_list)
+
+    congruence_results   = {}
+    feature_names        = real_df.columns.tolist()
+
+    for feature in feature_names:
+        r                           = real_df[feature].values
+        s                           = synth_df[feature].values
+        congruence_results[feature] = compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42)
+
+    summary_list = []
+
+    for feature, values in congruence_results.items():
+        summary_list.append({
+            'Synthetic'        : 'Synth',
+            'Real'             : 'Real',
+            'Feature'          : feature,
+            'Cosine_Similarity': values['cosine_similarity'],
+            'JSD'              : values['jensen_shannon_divergence'],
+            'EMD_Wasserstein'  : values['earth_movers_distance']
+        })
+
+    congruence_df  = pd.DataFrame(summary_list)
+    fig_congruence = create_congruence_barplot(congruence_df)
+
+    return fig_congruence
+
+def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
+    from src.visualization import create_completeness_barplot
+
+    real_df  = pd.read_csv(real_csv)
+    synth_df = pd.read_csv(synth_csv)
+
+    real_df.columns  = real_df.columns.str.strip()
+    synth_df.columns = synth_df.columns.str.strip()
+
+    if required_fields is None:
+        required_fields = list(
+            set(real_df.columns).intersection(set(synth_df.columns))
+        )
+
+    real_comp  = compute_completeness(real_df,  required_fields=required_fields, label=f"{label}_real")
+    synth_comp = compute_completeness(synth_df, required_fields=required_fields, label=f"{label}_synth")
+
+    real_per_field  = real_comp.pop('per_field',  {})
+    synth_per_field = synth_comp.pop('per_field', {})
+
+    comp_df = pd.DataFrame([
+        {'Dataset': 'Real',  **real_comp},
+        {'Dataset': 'Synth', **synth_comp}
+    ])
+
+    try:
+        fig = create_completeness_barplot(comp_df,
+                                          real_per_field=real_per_field,
+                                          synth_per_field=synth_per_field)
+    except Exception:
+        fig = None
+
+    return comp_df, fig
+
+
+def consistency_analysis(real_csv, synth_csv, group_by="Race", metric_cols=None, label=""):
+    from src.visualization import create_consistency_barplot
+
+    real_df  = pd.read_csv(real_csv)
+    synth_df = pd.read_csv(synth_csv)
+
+    real_df.columns  = real_df.columns.str.strip()
+    synth_df.columns = synth_df.columns.str.strip()
+
+    for col_name, df in [("real_csv", real_df), ("synth_csv", synth_df)]:
+        if group_by not in df.columns:
+            raise ValueError(f"group_by column '{group_by}' not found in {col_name}.")
+
+    real_df  = real_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
+    synth_df = synth_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
+
+    if metric_cols is None:
+        default_metrics = [
+            'Age at dx',
+            'BMI at dx (kg)',
+            'BMI at follow-up (kg)',
+            'mpp',
+            'compressionratio',
+            'exposure time'
+        ]
+        metric_cols = [
+            c for c in default_metrics
+            if c in real_df.columns and c in synth_df.columns
+        ]
+
+    if not metric_cols:
+        raise ValueError("No valid metric_cols found in both CSVs.")
+
+    results = []
+
+    for metric in metric_cols:
+        if metric in real_df.columns:
+            real_group_data = {
+                str(g): group[metric].dropna().values
+                for g, group in real_df.groupby(group_by)
+                if len(group[metric].dropna()) > 0
+            }
+            if len(real_group_data) >= 2:
+                real_cons = compute_consistency(real_group_data, label=f"{label}_real_{metric}")
+                results.append({'Dataset': 'Real', 'Group_By': group_by, 'Metric': metric, **real_cons})
+
+        if metric in synth_df.columns:
+            synth_group_data = {
+                str(g): group[metric].dropna().values
+                for g, group in synth_df.groupby(group_by)
+                if len(group[metric].dropna()) > 0
+            }
+            if len(synth_group_data) >= 2:
+                synth_cons = compute_consistency(synth_group_data, label=f"{label}_synth_{metric}")
+                results.append({'Dataset': 'Synth', 'Group_By': group_by, 'Metric': metric, **synth_cons})
+
+    if not results:
+        return pd.DataFrame(), None
+
+    cons_df = pd.DataFrame(results)
+
+    try:
+        fig = create_consistency_barplot(cons_df, group_by=group_by)
+    except Exception:
+        fig = None
+
+    return cons_df, fig
+
+def constraint_analysis(real_features, synth_features, features_to_check=None):
+    from src.visualization import create_constraint_barplot
+    
+    violation_df   = compute_constraint(real_features, 
+                                        synth_features, 
+                                        features_to_check = features_to_check)
+    
+    fig = create_constraint_barplot(violation_df)
+    
+    return violation_df, fig

@@ -1,4 +1,5 @@
 import numpy                  as     np
+import pandas                 as     pd
 
 from   scipy.stats            import entropy, f_oneway
 from   scipy.spatial          import ConvexHull
@@ -171,3 +172,53 @@ def compute_consistency(group_data, label=""):
         print(f"  {k:25s}: {val_str}")
 
     return metrics
+
+def compute_constraint(real_features, synth_features, features_to_check=None, percentile_low=1, percentile_high=99):
+
+    if features_to_check is None:
+        common_keys       = set(real_features.keys()) & set(synth_features.keys())
+        features_to_check = []
+
+        for k in sorted(common_keys):
+            try:
+                arr = np.asarray(real_features[k], dtype=float)
+                
+                if arr.ndim == 1 and len(arr) > 10 and np.issubdtype(arr.dtype, np.number):
+                    features_to_check.append(k)
+            except:
+                continue
+    
+    results = []
+    
+    for feat in features_to_check:
+        if feat not in real_features or feat not in synth_features:
+            continue
+            
+        real_vals   = np.asarray(real_features[feat], dtype=float)
+        synth_vals  = np.asarray(synth_features[feat], dtype=float)
+        
+        real_clean  = real_vals[~np.isnan(real_vals)]
+        synth_clean = synth_vals[~np.isnan(synth_vals)]
+        
+        if len(real_clean) < 10 or len(synth_clean) < 10:
+            continue
+            
+        lower      = np.nanpercentile(real_clean, percentile_low)
+        upper      = np.nanpercentile(real_clean, percentile_high)
+        synth_viol = np.mean((synth_clean < lower) | (synth_clean > upper)) * 100
+        
+        results.append({
+            'Feature'          : feat,
+            'Synth_Violation_%': round(synth_viol, 2),
+            'Lower_Bound'      : round(lower, 4),
+            'Upper_Bound'      : round(upper, 4),
+            'n_real'           : len(real_clean),
+            'n_synth'          : len(synth_clean)
+        })
+    
+    violation_df = pd.DataFrame(results)
+
+    if not violation_df.empty:
+        violation_df = violation_df.sort_values('Synth_Violation_%', ascending=False).reset_index(drop=True)
+    
+    return violation_df

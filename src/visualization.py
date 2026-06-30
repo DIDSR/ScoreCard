@@ -367,11 +367,7 @@ def create_congruence_barplot(congruence_df: pd.DataFrame, metrics_to_compute):
 
     return fig
 
-def create_completeness_barplot(
-    comp_df: pd.DataFrame,
-    real_per_field: dict = None,
-    synth_per_field: dict = None
-):
+def create_completeness_barplot(comp_df: pd.DataFrame, real_per_field: dict = None, synth_per_field: dict = None):
     apply_large_plot_style()
 
     metrics = [
@@ -607,5 +603,45 @@ def create_consistency_barplot(cons_df: pd.DataFrame, group_by):
     )
 
     fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.2)
+
+    return fig
+
+def create_constraint_barplot(violation_df):
+    apply_large_plot_style()
+    
+    if violation_df.empty:
+        fig, ax = plt.subplots(figsize=(10, 6), dpi=PLOT_DPI)
+        ax.text(0.5, 0.5, 'No constraint data available', ha='center', va='center', fontsize=18)
+        ax.axis('off')
+        return fig
+    
+    fig, ax = plt.subplots(figsize=(12, max(5, 0.55 * len(violation_df))), dpi=PLOT_DPI)
+    
+    sns.barplot(
+        data      = violation_df, 
+        y         = 'Feature', 
+        x         = 'Synth_Violation_%',
+        ax        = ax, 
+        color     = '#FF9966',
+        edgecolor = 'black', 
+        linewidth = 0.7
+    )
+    
+    ax.set_title(
+        'Constraint Violation Rate in Synthetic Data',
+        fontsize   = 18, 
+        fontweight = 'bold', 
+        pad        = 15
+    )
+
+    ax.set_xlabel('Violation Rate (%)', fontsize=16, labelpad=10)
+    ax.set_ylabel('Feature', fontsize=16, labelpad=10)
+    ax.tick_params(axis='both', labelsize=13)
+    ax.grid(True, axis='x', alpha=0.3)
+    
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%.1f', padding=4, fontsize=11)
+    
+    plt.tight_layout()
 
     return fig
