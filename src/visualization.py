@@ -12,6 +12,13 @@ from   scipy.stats        import gaussian_kde
 from   matplotlib         import pyplot as plt
 
 PLOT_DPI = 220
+WEB_FIG_WIDTH = 12.5
+WEB_SUPTITLE_SIZE = 20
+
+def _finalize_figure(fig, *, top=0.93):
+    fig.tight_layout(rect=[0, 0, 1, top], pad=1.4, h_pad=1.2, w_pad=1.0)
+
+    return fig
 
 def apply_large_plot_style():
     sns.set_theme(style="whitegrid", context="talk")
@@ -20,19 +27,19 @@ def apply_large_plot_style():
         "figure.dpi": PLOT_DPI,
         "savefig.dpi": PLOT_DPI,
 
-        "font.size": 15,
-        "axes.titlesize": 20,
-        "axes.labelsize": 17,
-        "xtick.labelsize": 14,
-        "ytick.labelsize": 14,
-        "legend.fontsize": 13,
+        "font.size"         : 15,
+        "axes.titlesize"    : 20,
+        "axes.labelsize"    : 17,
+        "xtick.labelsize"   : 14,
+        "ytick.labelsize"   : 14,
+        "legend.fontsize"   : 13,
 
-        "axes.titleweight": "bold",
-        "axes.labelpad": 10,
-        "xtick.major.pad": 6,
-        "ytick.major.pad": 6,
+        "axes.titleweight"  : "bold",
+        "axes.labelpad"     : 10,
+        "xtick.major.pad"   : 6,
+        "ytick.major.pad"   : 6,
 
-        "figure.titlesize": 28,
+        "figure.titlesize"  : 28,
         "figure.titleweight": "bold",
     })
 
@@ -46,29 +53,29 @@ def print_histograms(real_features, synth_features):
     fig, axes     = plt.subplots(
         n,
         1,
-        figsize=(17, fig_height),
-        dpi=PLOT_DPI,
-        sharex=False
+        figsize =(17, fig_height),
+        dpi     =PLOT_DPI,
+        sharex =False
     )
 
     if n == 1:
         axes = np.atleast_1d(axes)
 
     for ax, feature_name in zip(axes, feature_names):
-        real_data  = np.asarray(real_features[feature_name], dtype=float)
-        synth_data = np.asarray(synth_features[feature_name], dtype=float)
+        real_data   = np.asarray(real_features[feature_name], dtype=float)
+        synth_data  = np.asarray(synth_features[feature_name], dtype=float)
 
         real_clean  = real_data[~np.isnan(real_data)]
         synth_clean = synth_data[~np.isnan(synth_data)]
 
-        real_mean  = np.nanmean(real_clean)
-        real_ci    = bootstrap_ci(real_clean)
+        real_mean   = np.nanmean(real_clean)
+        real_ci     = bootstrap_ci(real_clean)
 
-        synth_mean = np.nanmean(synth_clean)
-        synth_ci   = bootstrap_ci(synth_clean)
+        synth_mean  = np.nanmean(synth_clean)
+        synth_ci    = bootstrap_ci(synth_clean)
 
-        x_min = np.nanmin([np.nanmin(real_clean), np.nanmin(synth_clean)])
-        x_max = np.nanmax([np.nanmax(real_clean), np.nanmax(synth_clean)])
+        x_min       = np.nanmin([np.nanmin(real_clean), np.nanmin(synth_clean)])
+        x_max       = np.nanmax([np.nanmax(real_clean), np.nanmax(synth_clean)])
 
         if x_min == x_max:
             x_min -= 0.5
@@ -78,26 +85,26 @@ def print_histograms(real_features, synth_features):
 
         ax.hist(
             real_clean,
-            bins=35,
-            alpha=0.6,
-            color="#9999CC",
-            label=f"Real (n={len(real_clean)})",
-            density=True,
-            range=shared_range,
-            edgecolor="black",
-            linewidth=0.6
+            bins      = 35,
+            alpha     = 0.6,
+            color     = "#9999CC",
+            label     = f"Real (n={len(real_clean)})",
+            density   = True,
+            range     = shared_range,
+            edgecolor = "black",
+            linewidth = 0.6
         )
 
         ax.hist(
             synth_clean,
-            bins=35,
-            alpha=0.6,
-            color="#FF9966",
-            label=f"Synthetic (n={len(synth_clean)})",
-            density=True,
-            range=shared_range,
-            edgecolor="black",
-            linewidth=0.6
+            bins      = 35,
+            alpha     = 0.6,
+            color     = "#FF9966",
+            label     = f"Synthetic (n={len(synth_clean)})",
+            density   = True,
+            range     = shared_range,
+            edgecolor = "black",
+            linewidth = 0.6
         )
 
         x_vals = np.linspace(x_min, x_max, 400)
@@ -106,31 +113,31 @@ def print_histograms(real_features, synth_features):
             ax.plot(
                 x_vals,
                 gaussian_kde(real_clean)(x_vals),
-                color="#9999CC",
-                linewidth=3
+                color     = "#9999CC",
+                linewidth = 3
             )
 
         if len(np.unique(synth_clean)) > 1:
             ax.plot(
                 x_vals,
                 gaussian_kde(synth_clean)(x_vals),
-                color="#FF9966",
-                linewidth=3
+                color     = "#FF9966",
+                linewidth = 3
             )
 
-        ax.axvline(real_mean, color="#9999CC", linestyle="--", linewidth=3, alpha=0.85)
+        ax.axvline(real_mean,  color="#9999CC", linestyle="--", linewidth=3, alpha=0.85)
         ax.axvline(synth_mean, color="#FF9966", linestyle="--", linewidth=3, alpha=0.85)
 
-        ax.axvspan(real_ci[0], real_ci[1], alpha=0.12, color="#9999CC", label="Real 95% CI")
+        ax.axvspan(real_ci[0],  real_ci[1],  alpha=0.12, color="#9999CC", label="Real 95% CI")
         ax.axvspan(synth_ci[0], synth_ci[1], alpha=0.12, color="#FF9966", label="Synthetic 95% CI")
 
         pretty_name = feature_name.replace("_", " ").title()
 
         ax.set_title(
             f"Real vs. Synthetic {pretty_name} Distribution",
-            fontsize=21,
-            fontweight="bold",
-            pad=14
+            fontsize   = 21,
+            fontweight = "bold",
+            pad        = 14
         )
         ax.set_xlabel(pretty_name, fontsize=17, labelpad=10)
         ax.set_ylabel("Density", fontsize=17, labelpad=10)
@@ -141,9 +148,9 @@ def print_histograms(real_features, synth_features):
 
     fig.suptitle(
         "Real vs Synthetic Feature Distributions",
-        fontsize=28,
-        fontweight="bold",
-        y=0.995
+        fontsize   = 28,
+        fontweight = "bold",
+        y          = 0.995
     )
 
     fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.0)
@@ -169,8 +176,11 @@ def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
 
     if gray.shape != mask.shape:
         mask = resize(
-            mask, gray.shape,
-            order=0, preserve_range=True, anti_aliasing=False
+            mask, 
+            gray.shape,
+            order          = 0, 
+            preserve_range = True, 
+            anti_aliasing  = False
         ).astype(mask.dtype)
 
     gabor_frequencies  = [0.1, 0.3, 0.5]
@@ -227,7 +237,8 @@ def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
                 gabor_responses[(freq, theta)][minr:maxr, minc:maxc]
                 for theta in gabor_orientations
             ], axis=0)
-            mean_response = np.mean(stacked, axis=0)
+
+            mean_response                = np.mean(stacked, axis=0)
             mean_response[~nucleus_mask] = 0
 
             axes[j+1].imshow(mean_response, cmap='inferno')
@@ -237,411 +248,139 @@ def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
         plt.tight_layout()
         plt.show()
 
-def create_coverage_barplot(coverage_df: pd.DataFrame):
+def create_barplot(
+    df                 : pd.DataFrame,
+    *,
+    x                  : str = "Value",
+    y                  : str = "Category",
+    hue                : str | None = None,
+    facet              : str | None = None,
+    suptitle           : str | None = None,
+    xlabel             : str | None = None,
+    ylabel             : str | None = None,
+    sort               : bool  = True,
+    ascending          : bool  = True,
+    bar_label_fmt      : str   = "%.4f",
+    color              : str   = "#5C6BC0",
+    height_per_category: float = 0.58,
+    base_width         : float = WEB_FIG_WIDTH,
+) -> "plt.Figure | dict[str, plt.Figure]":
+
     apply_large_plot_style()
 
-    metrics = [
-        "Variance",
-        "Entropy",
-        "Distance_to_Centroid",
-        "Convex_Hull_Volume"
-    ]
-
-    df_plot = coverage_df.reset_index().rename(columns={"index": "Dataset"})
-    df_melt = df_plot.melt(
-        id_vars    = "Dataset",
-        var_name   = "Metric",
-        value_name = "Value"
-    )
-
-    n = len(metrics)
-
-    fig, axes = plt.subplots(
-        n,
-        1,
-        figsize=(16, 6.2 * n),
-        dpi=PLOT_DPI
-    )
-
-    if n == 1:
-        axes = np.atleast_1d(axes)
-
-    for ax, metric in zip(axes, metrics):
-        data = df_melt[df_melt["Metric"] == metric]
-
-        sns.barplot(
-            data=data,
-            x="Dataset",
-            y="Value",
-            ax=ax,
-            palette="Set2",
-            edgecolor="black",
-            linewidth=0.9
-        )
-
-        ax.set_title(
-            metric.replace("_", " "),
-            fontsize=21,
-            fontweight="bold",
-            pad=14
-        )
-        ax.set_xlabel("")
-        ax.set_ylabel("Value",   fontsize  = 17,  labelpad= 10)
-        ax.tick_params(axis="x", labelsize = 15,  rotation= 0)
-        ax.tick_params(axis="y", labelsize = 14)
-
-        for container in ax.containers:
-            ax.bar_label(container, fmt="%.4f", padding=5, fontsize=13)
-
-        ax.margins(y=0.18)
-
-    fig.suptitle(
-        "Real vs Synthetic Coverage",
-        fontsize   = 28,
-        fontweight = "bold",
-        y          = 0.995
-    )
-
-    fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.0)
-
-    return fig
-
-def create_congruence_barplot(congruence_df: pd.DataFrame, metrics_to_compute):
-    apply_large_plot_style()
-
-    metrics = list(metrics_to_compute)
-
-    df_melt = congruence_df.melt(
-        id_vars    = ["Feature"],
-        value_vars = metrics,
-        var_name   = "Metric",
-        value_name = "Value"
-    )
-
-    n_features = congruence_df["Feature"].nunique()
-    fig_height = max(20, 1.2 * n_features + 9)
-
-    fig, axes = plt.subplots(
-        3,
-        1,
-        figsize=(18, fig_height),
-        dpi=PLOT_DPI
-    )
-
-    for ax, metric in zip(axes, metrics):
-        data = (
-            df_melt[df_melt["Metric"] == metric]
-            .sort_values("Value", ascending=True)
-        )
-
-        sns.barplot(
-            data=data,
-            y="Feature",
-            x="Value",
-            ax=ax,
-            palette="viridis",
-            edgecolor="black",
-            linewidth=0.6
-        )
-
-        ax.set_title(
-            metric.replace("_", " "),
-            fontsize=22,
-            fontweight="bold",
-            pad=14
-        )
-        ax.set_ylabel("")
-        ax.set_xlabel("Value", fontsize=17, labelpad=10)
-        ax.tick_params(axis="y", labelsize=14)
-        ax.tick_params(axis="x", labelsize=14)
-        ax.grid(True, axis="x", alpha=0.3)
-
-    fig.suptitle(
-        "Real vs. Synthetic Statistical Congruence",
-        fontsize=30,
-        fontweight="bold",
-        y=0.995
-    )
-
-    fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.2)
-
-    return fig
-
-def create_completeness_barplot(comp_df: pd.DataFrame, real_per_field: dict = None, synth_per_field: dict = None):
-    apply_large_plot_style()
-
-    metrics = [
-        "Missing_Data_Percentage",
-        "Required_Fields_Completeness"
-    ]
-
-    df_melt = comp_df.melt(
-        id_vars="Dataset",
-        value_vars=metrics,
-        var_name="Metric",
-        value_name="Value"
-    )
-
-    has_per_field = bool(real_per_field or synth_per_field)
-
-    if not has_per_field:
-        fig, axes = plt.subplots(
-            1,
-            2,
-            figsize=(17, 7),
-            dpi=PLOT_DPI
-        )
-
-        for ax, metric in zip(axes, metrics):
-            data = df_melt[df_melt["Metric"] == metric]
-
-            sns.barplot(
-                data=data,
-                x="Dataset",
-                y="Value",
-                ax=ax,
-                palette="Set2",
-                edgecolor="black",
-                linewidth=0.9
-            )
-
-            ax.set_title(
-                metric.replace("_", " "),
-                fontsize=21,
-                fontweight="bold",
-                pad=14
-            )
-            ax.set_xlabel("")
-            ax.set_ylabel("Percentage (%)", fontsize=17, labelpad=10)
-            ax.set_ylim(0, 115)
-            ax.tick_params(axis="both", labelsize=14)
-
-            for container in ax.containers:
-                ax.bar_label(container, fmt="%.2f%%", padding=5, fontsize=13)
-
-        fig.suptitle(
-            "Completeness: Real vs Synthetic",
-            fontsize=28,
-            fontweight="bold",
-            y=0.995
-        )
-
-        fig.tight_layout(rect=[0, 0, 1, 0.96])
-
-        return fig
-
-    all_fields = sorted(
-        set(list(real_per_field.keys()) + list(synth_per_field.keys()))
-    )
-
-    per_field_rows = []
-
-    for field in all_fields:
-        per_field_rows.append({
-            "Dataset": "Real",
-            "Field": field,
-            "Completeness (%)": real_per_field.get(field, np.nan)
-        })
-        per_field_rows.append({
-            "Dataset": "Synth",
-            "Field": field,
-            "Completeness (%)": synth_per_field.get(field, np.nan)
-        })
-
-    per_field_df = pd.DataFrame(per_field_rows)
-
-    n_fields = len(all_fields)
-    fig_height = max(14, 0.55 * n_fields + 9)
-
-    fig = plt.figure(figsize=(18, fig_height), dpi=PLOT_DPI)
-    gs = fig.add_gridspec(
-        2,
-        2,
-        height_ratios=[1, max(1.7, 0.12 * n_fields + 1.4)]
-    )
-
-    top_axes = [
-        fig.add_subplot(gs[0, 0]),
-        fig.add_subplot(gs[0, 1])
-    ]
-
-    ax_per = fig.add_subplot(gs[1, :])
-
-    for ax, metric in zip(top_axes, metrics):
-        data = df_melt[df_melt["Metric"] == metric]
-
-        sns.barplot(
-            data=data,
-            x="Dataset",
-            y="Value",
-            ax=ax,
-            palette="Set2",
-            edgecolor="black",
-            linewidth=0.9
-        )
-
-        ax.set_title(
-            metric.replace("_", " "),
-            fontsize=21,
-            fontweight="bold",
-            pad=14
-        )
-        ax.set_xlabel("")
-        ax.set_ylabel("Percentage (%)", fontsize=17, labelpad=10)
-        ax.set_ylim(0, 115)
-        ax.tick_params(axis="both", labelsize=14)
-
-        for container in ax.containers:
-            ax.bar_label(container, fmt="%.2f%%", padding=5, fontsize=13)
-
-    sns.barplot(
-        data=per_field_df,
-        y="Field",
-        x="Completeness (%)",
-        hue="Dataset",
-        ax=ax_per,
-        palette="Set2",
-        edgecolor="black",
-        linewidth=0.8
-    )
-
-    ax_per.set_title(
-        "Per-Field Completeness: Real vs Synthetic",
-        fontsize=22,
-        fontweight="bold",
-        pad=16
-    )
-    ax_per.set_xlabel("Completeness (%)", fontsize=17, labelpad=10)
-    ax_per.set_ylabel("Metadata Field", fontsize=17, labelpad=10)
-    ax_per.set_xlim(0, 115)
-    ax_per.tick_params(axis="y", labelsize=14)
-    ax_per.tick_params(axis="x", labelsize=14)
-    ax_per.legend(title="Dataset", fontsize=13, title_fontsize=14)
-
-    for container in ax_per.containers:
-        ax_per.bar_label(container, fmt="%.1f%%", padding=4, fontsize=12)
-
-    fig.suptitle(
-        "Completeness: Real vs Synthetic",
-        fontsize=30,
-        fontweight="bold",
-        y=0.995
-    )
-
-    fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.0)
-
-    return fig
-
-def create_consistency_barplot(cons_df: pd.DataFrame, group_by):
-    apply_large_plot_style()
-
-    if cons_df.empty:
+    if df is None or len(df) == 0:
         fig, ax = plt.subplots(figsize=(12, 5), dpi=PLOT_DPI)
-        ax.text(
-            0.5, 0.5,
-            "No consistency data available",
-            ha="center", va="center", fontsize=18
-        )
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=18)
         ax.axis("off")
+
         return fig
 
-    metrics_to_plot = [
-        "Variance_of_Group_Means",
-        "Max_Min_Difference",
-        "ANOVA_F_statistic"
-    ]
+    working     = df.copy()
+    hue_palette = ["#5470C6", "#EE6666"]
 
-    id_vars = ["Metric", "Dataset"] if "Dataset" in cons_df.columns else ["Metric"]
+    if facet and facet in working.columns:
+        facet_values                = [v for v in working[facet].dropna().unique()]
+        figs: dict[str, plt.Figure] = {}
 
-    df_melt = cons_df.melt(
-        id_vars=id_vars,
-        value_vars=metrics_to_plot,
-        var_name="Consistency_Metric",
-        value_name="Value"
+        for fval in facet_values:
+            sub = working[working[facet] == fval].copy()
+
+            if sort and x in sub.columns and len(sub) > 1:
+                sub = sub.sort_values(by=x, ascending=ascending)
+
+            n_cats  = sub[y].nunique() if y in sub.columns else 6
+            h       = max(3.8, height_per_category * n_cats + 2.0)
+
+            fig, ax = plt.subplots(figsize=(base_width, h), dpi=PLOT_DPI)
+
+            _plot_bars_on_ax(
+                ax, 
+                sub, 
+                x, 
+                y, 
+                hue, 
+                color, 
+                hue_palette, 
+                bar_label_fmt,
+                xlabel = xlabel, 
+                ylabel = ylabel
+            )
+
+            facet_title = str(fval).replace("_", " ").title()
+
+            if suptitle:
+                fig.suptitle(
+                    f"{suptitle} — {facet_title}",
+                    fontsize=WEB_SUPTITLE_SIZE,
+                    fontweight="bold",
+                    y=0.98,
+                )
+            else:
+                ax.set_title(facet_title, fontsize=18, fontweight="bold", pad=10)
+
+            _finalize_figure(fig)
+            figs[str(fval)] = fig
+
+        return figs
+
+    n_cats  = working[y].nunique() if y in working.columns else 6
+    h       = max(3.8, height_per_category * n_cats + 2.0)
+    fig, ax = plt.subplots(figsize=(base_width, h), dpi=PLOT_DPI)
+
+    _plot_bars_on_ax(
+        ax, working, 
+        x, 
+        y, 
+        hue, 
+        color, 
+        hue_palette, 
+        bar_label_fmt,
+        xlabel = xlabel, 
+        ylabel = ylabel
     )
 
-    n_metrics  = cons_df["Metric"].nunique()
-    fig_height = max(20, 1.15 * n_metrics + 9)
-
-    fig, axes = plt.subplots(3, 1, figsize=(18, fig_height), dpi=PLOT_DPI)
-
-    for ax, cmetric in zip(axes, metrics_to_plot):
-        data = df_melt[df_melt["Consistency_Metric"] == cmetric]
-
-        sns.barplot(
-            data=data,
-            y="Metric",
-            x="Value",
-            hue="Dataset" if "Dataset" in data.columns else None,
-            ax=ax,
-            palette="Set2",
-            edgecolor="black",
-            linewidth=0.7
+    if suptitle:
+        fig.suptitle(
+            suptitle,
+            fontsize   = WEB_SUPTITLE_SIZE,
+            fontweight = "bold",
+            y          = 0.98,
         )
 
-        ax.set_title(
-            cmetric.replace("_", " "),
-            fontsize=22, fontweight="bold", pad=14
-        )
-        ax.set_xlabel("Value", fontsize=17, labelpad=10)
-        ax.set_ylabel("", fontsize=17)
-        ax.tick_params(axis="y", labelsize=14)
-        ax.tick_params(axis="x", labelsize=14)
-        ax.grid(True, axis="x", alpha=0.3)
-
-        for container in ax.containers:
-            ax.bar_label(container, fmt="%.4f", padding=5, fontsize=12)
-
-        ax.margins(x=0.15)
-
-        if "Dataset" in data.columns:
-            ax.legend(title="Dataset", fontsize=13, title_fontsize=14)
-
-    fig.suptitle(
-        f"Consistency across {group_by}: Real vs. Synthetic",
-        fontsize=30, fontweight="bold", y=0.995
-    )
-
-    fig.tight_layout(rect=[0, 0, 1, 0.975], h_pad=3.2)
-
+    _finalize_figure(fig)
     return fig
 
-def create_constraint_barplot(violation_df):
-    apply_large_plot_style()
-    
-    if violation_df.empty:
-        fig, ax = plt.subplots(figsize=(10, 6), dpi=PLOT_DPI)
-        ax.text(0.5, 0.5, 'No constraint data available', ha='center', va='center', fontsize=18)
-        ax.axis('off')
-        return fig
-    
-    fig, ax = plt.subplots(figsize=(12, max(5, 0.55 * len(violation_df))), dpi=PLOT_DPI)
-    
-    sns.barplot(
-        data      = violation_df, 
-        y         = 'Feature', 
-        x         = 'Synth_Violation_%',
-        ax        = ax, 
-        color     = '#FF9966',
-        edgecolor = 'black', 
-        linewidth = 0.7
-    )
-    
-    ax.set_title(
-        'Constraint Violation Rate in Synthetic Data',
-        fontsize   = 18, 
-        fontweight = 'bold', 
-        pad        = 15
+
+def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlabel=None, ylabel=None):
+    plot_kw = dict(
+        data      = sub,
+        y         = y,
+        x         = x,
+        ax        = ax,
+        edgecolor = "black",
+        linewidth = 0.75,
     )
 
-    ax.set_xlabel('Violation Rate (%)', fontsize=16, labelpad=10)
-    ax.set_ylabel('Feature', fontsize=16, labelpad=10)
-    ax.tick_params(axis='both', labelsize=13)
-    ax.grid(True, axis='x', alpha=0.3)
-    
+    if hue and hue in sub.columns:
+        plot_kw["hue"]     = hue
+        plot_kw["palette"] = hue_palette
+    else:
+        plot_kw["color"]   = color
+
+    sns.barplot(**plot_kw)
+
+    ax.set_xlabel(
+        xlabel or (x.replace("_", " ").title() if x else ""),
+        fontsize = 16, 
+        labelpad = 8
+    )
+    ax.set_ylabel(ylabel or "", fontsize=16, labelpad=6)
+
+    ax.tick_params(axis="y", labelsize=13)
+    ax.tick_params(axis="x", labelsize=12)
+    ax.grid(True, axis="x", alpha=0.28)
+
     for container in ax.containers:
-        ax.bar_label(container, fmt='%.1f', padding=4, fontsize=11)
-    
-    plt.tight_layout()
+        ax.bar_label(container, fmt=bar_label_fmt, padding=4, fontsize=11)
 
-    return fig
+    ax.margins(x=0.10)

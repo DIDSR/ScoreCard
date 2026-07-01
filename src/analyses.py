@@ -13,19 +13,28 @@ from   src.compute_metrics   import (
     compute_constraint,
 )
 
-def hist_analysis(results_dir="./data/features"):
+def hist_analysis(results_dir="./data/features", feature_names=None):
     from src.visualization import print_histograms
 
-    real_features        = load_features(os.path.join(results_dir, 'real_patch_appearance_features.npz'))
-    synth_features       = load_features(os.path.join(results_dir, 'static_patch_appearance_features.npz'))
+    real_features  = load_features(os.path.join(results_dir, 'real_patch_appearance_features.npz'))
+    synth_features = load_features(os.path.join(results_dir, 'static_patch_appearance_features.npz'))
 
-    fig_hist             = print_histograms(real_features, synth_features)
+    if feature_names:
+        real_features  = {k: real_features[k] for k in feature_names if k in real_features}
+        synth_features = {k: synth_features[k] for k in feature_names if k in synth_features}
+
+    fig_hist = print_histograms(real_features, synth_features)
 
     return fig_hist, None
 
-def coverage_analysis(results_dir='./data/features', real_features='real_patch_appearance_features.npz', synth_features='kde_patch_appearance_features.npz'):
-    from src.visualization import create_coverage_barplot
 
+def coverage_analysis(
+    results_dir='./data/features',
+    real_features='real_patch_appearance_features.npz',
+    synth_features='kde_patch_appearance_features.npz',
+    feature_names=None,
+    metrics_to_compute=None,
+):
     real_features                    = os.path.join(results_dir, real_features)
     synth_features                   = os.path.join(results_dir, synth_features)
 
@@ -39,28 +48,58 @@ def coverage_analysis(results_dir='./data/features', real_features='real_patch_a
     synth_df                         = combine_features(synth_features_list)
 
     real_df, synth_df, kept_features = filter_features(real_df, synth_df, 0.5)
-    feature_names                    = [c for c in kept_features if c not in real_features]
+    cols = [c for c in kept_features if c not in real_features]
 
-    real_features_coverage           = compute_coverage(real_df[feature_names],  "Real")
-    synth_features_coverage          = compute_coverage(synth_df[feature_names], "Synth")
+    if feature_names:
+        cols = [c for c in cols if c in feature_names]
 
-    coverage_df                      = pd.DataFrame({
+    if not cols:
+        return {}
+
+    real_features_coverage  = compute_coverage(real_df[cols], "Real")
+    synth_features_coverage = compute_coverage(synth_df[cols], "Synth")
+
+    coverage_df = pd.DataFrame({
         'Real_Features':  real_features_coverage,
         'Synth_Features': synth_features_coverage,
     }).T
 
-    fig_coverage = create_coverage_barplot(coverage_df)
+    from src.visualization import create_barplot
 
-    return fig_coverage
+    df_long = (
+        coverage_df.reset_index()
+        .rename(columns={"index": "Dataset"})
+        .melt(id_vars="Dataset", var_name="Metric", value_name="Value")
+    )
 
+    if metrics_to_compute:
+        enabled = [m for m, on in metrics_to_compute.items() if on]
+        df_long = df_long[df_long["Metric"].isin(enabled)]
 
-def congruence_analysis(metrics_to_compute,
-                        results_dir    = './data/features', 
-                        real_features  = 'real_patch_appearance_features.npz', 
-                        synth_features = 'kde_patch_appearance_features.npz'
-                        ):
+    figs = {}
+    for metric in df_long["Metric"].unique():
+        sub = df_long[df_long["Metric"] == metric]
+        pretty = metric.replace("_", " ").title()
+        figs[metric] = create_barplot(
+            sub,
+            x="Value",
+            y="Dataset",
+            hue="Dataset",
+            suptitle=f"Coverage — {pretty}",
+            xlabel="Value",
+            bar_label_fmt="%.4f",
+            sort=False,
+        )
 
-    from src.visualization import create_congruence_barplot
+    return figs
+
+def congruence_analysis(
+    metrics_to_compute,
+    results_dir='./data/features',
+    real_features='real_patch_appearance_features.npz',
+    synth_features='kde_patch_appearance_features.npz',
+    feature_names=None,
+):
 
     real_features        = os.path.join(results_dir, real_features)
     synth_features       = os.path.join(results_dir, synth_features)
@@ -74,34 +113,63 @@ def congruence_analysis(metrics_to_compute,
     real_df              = combine_features(real_features_list)
     synth_df             = combine_features(synth_features_list)
 
-    congruence_results   = {}
-    feature_names        = real_df.columns.tolist()
+    congruence_results = {}
+    cols = real_df.columns.tolist()
+    if feature_names:
+        cols = [c for c in cols if c in feature_names]
 
-    for feature in feature_names:
+    for feature in cols:
         r                           = real_df[feature].values
         s                           = synth_df[feature].values
         congruence_results[feature] = compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42)
 
+    metric_column_map = {
+        'cosine_similarity'        : 'Cosine_Similarity',
+        'jensen_shannon_divergence': 'JSD',
+        'earth_movers_distance'    : 'EMD_Wasserstein',
+    }
+
     summary_list = []
 
     for feature, values in congruence_results.items():
-        summary_list.append({
-            'Synthetic'        : 'Synth',
-            'Real'             : 'Real',
-            'Feature'          : feature,
-            'Cosine_Similarity': values['cosine_similarity'],
-            'JSD'              : values['jensen_shannon_divergence'],
-            'EMD_Wasserstein'  : values['earth_movers_distance']
-        })
+        row = {
+            'Synthetic': 'Synth',
+            'Real'     : 'Real',
+            'Feature'  : feature,
+        }
+        for result_key, column_name in metric_column_map.items():
+            if result_key in values:
+                row[column_name] = values[result_key]
+        summary_list.append(row)
 
     congruence_df  = pd.DataFrame(summary_list)
-    fig_congruence = create_congruence_barplot(congruence_df)
 
-    return fig_congruence
+    from src.visualization import create_barplot
+    metric_cols = [c for c in congruence_df.columns if c not in ("Feature", "Synthetic", "Real")]
+    df_melt = congruence_df.melt(
+        id_vars=["Feature"],
+        value_vars=metric_cols,
+        var_name="Metric",
+        value_name="Value"
+    )
 
-def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
-    from src.visualization import create_completeness_barplot
+    figs = {}
+    for metric in df_melt["Metric"].unique():
+        sub = df_melt[df_melt["Metric"] == metric]
+        pretty = metric.replace("_", " ").title()
+        figs[metric] = create_barplot(
+            sub,
+            x="Value",
+            y="Feature",
+            suptitle=f"Real vs. Synthetic {pretty}",
+            sort=True,
+            ascending=True,
+            bar_label_fmt="%.4f",
+        )
 
+    return figs
+
+def completeness_analysis(real_csv, synth_csv, required_fields=None, label="", metrics_to_include=None):
     real_df  = pd.read_csv(real_csv)
     synth_df = pd.read_csv(synth_csv)
 
@@ -125,18 +193,76 @@ def completeness_analysis(real_csv, synth_csv, required_fields=None, label=""):
     ])
 
     try:
-        fig = create_completeness_barplot(comp_df,
-                                          real_per_field=real_per_field,
-                                          synth_per_field=synth_per_field)
+        from src.visualization import create_barplot
+
+        figs = {}
+
+        df_melt = comp_df.melt(
+            id_vars="Dataset",
+            value_vars=["Missing_Data_Percentage", "Required_Fields_Completeness"],
+            var_name="Metric",
+            value_name="Value"
+        )
+        summary_metrics = ["Missing_Data_Percentage", "Required_Fields_Completeness"]
+        if metrics_to_include:
+            summary_metrics = [
+                m for m in summary_metrics
+                if metrics_to_include.get(m, True)
+            ]
+
+        for metric in summary_metrics:
+            sub = df_melt[df_melt["Metric"] == metric]
+            pretty = metric.replace("_", " ").title()
+            figs[metric] = create_barplot(
+                sub,
+                x="Value",
+                y="Dataset",
+                hue="Dataset",
+                suptitle=f"Completeness — {pretty}",
+                xlabel="Percentage (%)",
+                bar_label_fmt="%.2f",
+            )
+
+        include_per_field = True
+        if metrics_to_include:
+            include_per_field = metrics_to_include.get("Per_Field", True)
+
+        if include_per_field and (real_per_field or synth_per_field):
+            all_fields = sorted(
+                set(list(real_per_field.keys()) + list(synth_per_field.keys()))
+            )
+            per_rows = []
+            for field in all_fields:
+                per_rows.append({"Dataset": "Real", "Field": field,
+                                 "Completeness (%)": real_per_field.get(field, float("nan"))})
+                per_rows.append({"Dataset": "Synth", "Field": field,
+                                 "Completeness (%)": synth_per_field.get(field, float("nan"))})
+            per_df = pd.DataFrame(per_rows)
+            figs["Per_Field"] = create_barplot(
+                per_df,
+                x="Completeness (%)",
+                y="Field",
+                hue="Dataset",
+                suptitle="Per-Field Completeness",
+                xlabel="Completeness (%)",
+                bar_label_fmt="%.1f",
+                height_per_category=0.45,
+            )
+
     except Exception:
-        fig = None
+        figs = None
 
-    return comp_df, fig
+    return comp_df, figs
 
 
-def consistency_analysis(real_csv, synth_csv, group_by="Race", metric_cols=None, label=""):
-    from src.visualization import create_consistency_barplot
-
+def consistency_analysis(
+    real_csv,
+    synth_csv,
+    group_by="Race",
+    metric_cols=None,
+    label="",
+    metrics_to_plot=None,
+):
     real_df  = pd.read_csv(real_csv)
     synth_df = pd.read_csv(synth_csv)
 
@@ -196,19 +322,66 @@ def consistency_analysis(real_csv, synth_csv, group_by="Race", metric_cols=None,
     cons_df = pd.DataFrame(results)
 
     try:
-        fig = create_consistency_barplot(cons_df, group_by=group_by)
-    except Exception:
-        fig = None
+        from src.visualization import create_barplot
+        plot_metrics = ["Variance_of_Group_Means", "Max_Min_Difference", "ANOVA_F_statistic"]
+        if metrics_to_plot:
+            plot_metrics = [m for m in plot_metrics if metrics_to_plot.get(m, True)]
+        id_vars = ["Metric", "Dataset"] if "Dataset" in cons_df.columns else ["Metric"]
+        df_melt = cons_df.melt(
+            id_vars=id_vars,
+            value_vars=plot_metrics,
+            var_name="Consistency_Metric",
+            value_name="Value"
+        )
 
-    return cons_df, fig
+        figs = {}
+        for cmetric in df_melt["Consistency_Metric"].dropna().unique():
+            sub = df_melt[df_melt["Consistency_Metric"] == cmetric]
+            pretty = cmetric.replace("_", " ").title()
+            figs[cmetric] = create_barplot(
+                sub,
+                x="Value",
+                y="Metric",
+                hue="Dataset" if "Dataset" in sub.columns else None,
+                suptitle=f"Consistency — {pretty} (by {group_by})",
+                bar_label_fmt="%.4f",
+            )
+    except Exception:
+        figs = None
+
+    return cons_df, figs
+
+def constraint_patch_analysis(
+    results_dir='./data/features',
+    real_features='real_patch_appearance_features.npz',
+    synth_features='kde_patch_appearance_features.npz',
+    features_to_check=None,
+):
+    real_feats = load_features(os.path.join(results_dir, real_features))
+    synth_feats = load_features(os.path.join(results_dir, synth_features))
+    return constraint_analysis(real_feats, synth_feats, features_to_check=features_to_check)
+
 
 def constraint_analysis(real_features, synth_features, features_to_check=None):
-    from src.visualization import create_constraint_barplot
-    
-    violation_df   = compute_constraint(real_features, 
-                                        synth_features, 
-                                        features_to_check = features_to_check)
-    
-    fig = create_constraint_barplot(violation_df)
-    
+    from src.visualization import create_barplot
+
+    violation_df = compute_constraint(
+        real_features,
+        synth_features,
+        features_to_check=features_to_check,
+    )
+
+    fig = create_barplot(
+        violation_df if violation_df is not None else pd.DataFrame(),
+        x="Synth_Violation_%",
+        y="Feature",
+        suptitle="Constraint Violation Rate in Synthetic Data",
+        xlabel="Violation Rate (%)",
+        bar_label_fmt="%.1f",
+        color="#EE6666",
+        sort=False,
+        height_per_category=0.55,
+        base_width=14.0,
+    )
+
     return violation_df, fig
