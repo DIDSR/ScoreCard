@@ -276,20 +276,6 @@ def consistency_analysis(
     real_df  = real_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
     synth_df = synth_df.replace(r'^\s*$', np.nan, regex=True).dropna(subset=[group_by])
 
-    if metric_cols is None:
-        default_metrics = [
-            'Age at dx',
-            'BMI at dx (kg)',
-            'BMI at follow-up (kg)',
-            'mpp',
-            'compressionratio',
-            'exposure time'
-        ]
-        metric_cols = [
-            c for c in default_metrics
-            if c in real_df.columns and c in synth_df.columns
-        ]
-
     if not metric_cols:
         raise ValueError("No valid metric_cols found in both CSVs.")
 

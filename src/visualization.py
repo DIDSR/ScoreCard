@@ -383,4 +383,4 @@ def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlab
     for container in ax.containers:
         ax.bar_label(container, fmt=bar_label_fmt, padding=4, fontsize=11)
 
-    ax.margins(x=0.10)
+    ax.margins(x=0.1)
