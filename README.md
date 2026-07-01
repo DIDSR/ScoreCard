@@ -34,6 +34,8 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 6. [**Comprehension**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/06_Comprehension.ipynb) — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
 
+7. [**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
+
 ---
 
 ## Synthetic Medical Data Scorecard Structure
