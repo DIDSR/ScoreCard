@@ -1,5 +1,6 @@
 import os
 import cv2
+import glob
 import uuid
 import shutil
 import threading
@@ -12,7 +13,7 @@ import numpy               as np
 import pandas              as pd
 
 
-
+from   copy                import deepcopy
 from   werkzeug.utils      import secure_filename
 from   src.generic_predict import produce_output
 
@@ -37,8 +38,17 @@ from   src.analyses        import (
                                    coverage_analysis,
                                    congruence_analysis,
                                    completeness_analysis,
-                                   consistency_analysis
-                                  )       
+                                   consistency_analysis,
+                                   constraint_patch_analysis,
+                                  )
+from   src.analysis_registry import (
+                                   ANALYSIS_REGISTRY,
+                                   discover_schema,
+                                   default_config,
+                                   enabled_flags,
+                                   parse_config_from_form,
+                                   feature_options_for_analysis,
+                                  )
 
 warnings.filterwarnings("ignore")
 matplotlib.use('Agg')
@@ -50,15 +60,21 @@ app            = Flask(__name__,
 app.secret_key = 'mammoqc_secret_key'
 
 # Configuration
-BASE_DIR         = os.getcwd()
-UPLOAD_FOLDER    = os.path.join(BASE_DIR, 'flask_files', 'static', 'uploads')
-OUTPUT_FOLDER    = os.path.join(BASE_DIR, 'flask_files', 'static', 'outputs')
-TMP_DATA_DIR     = os.path.join(BASE_DIR, 'data', 'tmp')
-PRESET_REAL_CSV  = os.path.join(BASE_DIR, 'data', 'real_patch_appearance.csv')
-PRESET_SYNTH_CSV = os.path.join(BASE_DIR, 'data', 'kde_patch_appearance.csv')
-USER_REAL_CSV    = os.path.join(BASE_DIR, 'data', 'real_patch_appearance.csv')
-USER_SYNTH_CSV   = os.path.join(BASE_DIR, 'data', 'kde_patch_appearance.csv')
+BASE_DIR                  = os.getcwd()
+UPLOAD_FOLDER             = os.path.join(BASE_DIR, 'flask_files', 'static', 'uploads')
+OUTPUT_FOLDER             = os.path.join(BASE_DIR, 'flask_files', 'static', 'outputs')
+TMP_DATA_DIR              = os.path.join(BASE_DIR, 'data', 'tmp')
+PRESET_REAL_CSV           = os.path.join(BASE_DIR, 'data', 'real_patch_appearance.csv')
+PRESET_SYNTH_CSV          = os.path.join(BASE_DIR, 'data', 'kde_patch_appearance.csv')
+PRESET_METADATA_REAL_CSV  = os.path.join(BASE_DIR, 'data', 'real_patch_appearance_with_metadata.csv')
+PRESET_METADATA_SYNTH_CSV = os.path.join(BASE_DIR, 'data', 'kde_patch_appearance_with_metadata.csv')
+USER_REAL_CSV             = os.path.join(BASE_DIR, 'data', 'real_patch_appearance.csv')
+USER_SYNTH_CSV            = os.path.join(BASE_DIR, 'data', 'kde_patch_appearance.csv')
+USER_METADATA_REAL_CSV    = os.path.join(BASE_DIR, 'data', 'uploaded_metadata_real.csv')
+USER_METADATA_SYNTH_CSV   = os.path.join(BASE_DIR, 'data', 'uploaded_metadata_synth.csv')
 
+NO_IMAGES_MESSAGE         = "No images available, utilizing default CSVs"
+FEATURES_DIR              = './data/features'
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -84,7 +100,6 @@ def cleanup_tmp():
             except Exception as e:
                 print(f"Error cleaning {file_path}: {e}")
 
-    # Clear preview images
     if os.path.exists(UPLOAD_FOLDER):
         for filename in os.listdir(UPLOAD_FOLDER):
             file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -92,10 +107,10 @@ def cleanup_tmp():
             try:
                 if os.path.isfile(file_path):
                     os.remove(file_path)
+
             except Exception as e:
                 print(f"Error cleaning {file_path}: {e}")
 
-    # Clear job output directories
     if os.path.exists(OUTPUT_FOLDER):
         for item in os.listdir(OUTPUT_FOLDER):
             item_path = os.path.join(OUTPUT_FOLDER, item)
@@ -105,8 +120,121 @@ def cleanup_tmp():
                     shutil.rmtree(item_path)
                 elif os.path.isfile(item_path):
                     os.remove(item_path)
+
             except Exception as e:
                 print(f"Error cleaning {item_path}: {e}")
+
+def _save_uploaded_csv(file_storage, dest_path):
+    """Save an uploaded CSV/JSON metadata file and return its path."""
+    filename = secure_filename(file_storage.filename)
+    if not filename:
+        return None
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext not in {'.csv', '.json'}:
+        raise ValueError(f"Unsupported metadata file type: {ext or '(none)'}")
+    file_storage.save(dest_path)
+    return dest_path
+
+
+def _resolve_metadata_csvs(real_csv, synth_csv, is_preset=False):
+    """
+    Determine metadata CSV paths for Completeness and Consistency.
+
+    Preset loads dedicated metadata-rich CSVs. Custom uploads may provide
+    separate metadata files; otherwise patch CSVs are used as a fallback.
+    """
+    if is_preset:
+        return PRESET_METADATA_REAL_CSV, PRESET_METADATA_SYNTH_CSV
+
+    metadata_real   = None
+    metadata_synth  = None
+    real_meta_file  = request.files.get('real_metadata')
+    synth_meta_file = request.files.get('synth_metadata')
+
+    if real_meta_file and real_meta_file.filename:
+        metadata_real  = _save_uploaded_csv(real_meta_file, USER_METADATA_REAL_CSV)
+
+    if synth_meta_file and synth_meta_file.filename:
+        metadata_synth = _save_uploaded_csv(synth_meta_file, USER_METADATA_SYNTH_CSV)
+
+    return metadata_real or real_csv, metadata_synth or synth_csv
+
+
+def _discover_dataset_schema(real_csv, synth_csv, metadata_real_csv=None, metadata_synth_csv=None):
+    meta_real  = metadata_real_csv  or session.get('metadata_real_csv')  or real_csv
+    meta_synth = metadata_synth_csv or session.get('metadata_synth_csv') or synth_csv
+
+    return discover_schema(
+        real_csv,
+        synth_csv,
+        FEATURES_DIR,
+        metadata_real_csv  = meta_real,
+        metadata_synth_csv = meta_synth,
+    )
+
+
+def _images_available(df):
+    """Return True when the dataframe has at least one readable image filepath."""
+    if df is None or df.empty or 'filepath' not in df.columns:
+        return False
+
+    return df['filepath'].astype(str).apply(os.path.isfile).any()
+
+def _prepare_dataset_preview(real_csv, synth_csv, n=5):
+    """
+    Load CSV datasets and generate preview thumbnails when image files exist.
+
+    If images are missing or preview generation fails, return empty previews with
+    a user-facing message while keeping the CSV datasets ready for analysis.
+    """
+    real_df  = pd.read_csv(real_csv)
+    synth_df = pd.read_csv(synth_csv)
+
+    fallback = {
+        'real_df'             : real_df,
+        'synth_df'            : synth_df,
+        'real_preview_images' : [],
+        'synth_preview_images': [],
+        'images_available'    : False,
+        'preview_message'     : NO_IMAGES_MESSAGE,
+    }
+
+    if not _images_available(real_df) and not _images_available(synth_df):
+        return fallback
+
+    try:
+        real_previews, synth_previews = generate_previews(
+            real_df, n=n, prefix="real", synth_df=synth_df
+        )
+
+        if not real_previews:
+            return fallback
+
+        paired_real  = []
+        paired_synth = []
+
+        for real_img, synth_img in zip(real_previews, synth_previews):
+            if real_img and synth_img:
+                paired_real.append(real_img)
+                paired_synth.append(synth_img)
+
+        if paired_real:
+            real_previews, synth_previews = paired_real, paired_synth
+
+        return {
+            'real_df'             : real_df,
+            'synth_df'            : synth_df,
+            'real_preview_images' : real_previews,
+            'synth_preview_images': synth_previews,
+            'images_available'    : True,
+            'preview_message'     : None,
+        }
+
+    except Exception as exc:
+        print(f"Preview generation skipped: {exc}")
+        return fallback
+
 
 def generate_previews(df, n=4, prefix="img", synth_df=None):
     """
@@ -120,10 +248,9 @@ def generate_previews(df, n=4, prefix="img", synth_df=None):
     synth_previews = []
 
     for idx, row in samples.iterrows():
-        img_path  = row['filepath']
-        real_stem = os.path.splitext(os.path.basename(str(img_path)))[0]
-
-        img_array = read_png(img_path)
+        img_path     = row['filepath']
+        real_stem    = os.path.splitext(os.path.basename(str(img_path)))[0]
+        img_array    = read_png(img_path)
 
         target_size  = 250
         h, w         = img_array.shape[:2]
@@ -168,20 +295,45 @@ def generate_previews(df, n=4, prefix="img", synth_df=None):
     if synth_df is not None:
         print(f"DEBUG >>> {prefix}: Generated {len(real_previews)} paired previews")
         return real_previews, synth_previews
+    
     else:
         print(f"DEBUG >>> {prefix}: Sampled   {len(samples)} rows, appended {len(real_previews)} previews")
         return real_previews
 
+def _render_index_page(dataset_ready=False, preview=None, schema=None, analysis_config=None):
+    ctx = {
+        'dataset_ready'               : dataset_ready,
+        'analysis_registry'           : ANALYSIS_REGISTRY,
+        'schema'                      : schema or {},
+        'analysis_config'             : analysis_config or {},
+        'feature_options_for_analysis': feature_options_for_analysis,
+    }
+
+    if dataset_ready and preview:
+        ctx.update({
+            'real_preview_images' : preview['real_preview_images'],
+            'synth_preview_images': preview['synth_preview_images'],
+            'images_available'    : preview['images_available'],
+            'preview_message'     : preview['preview_message'],
+            'total_images'        : len(preview['real_df']),
+            'total_synth_images'  : len(preview['synth_df']),
+        })
+
+    return render_template('index.html', **ctx)
+
+
 @app.route('/')
 def index():
     cleanup_tmp()
-    return render_template('index.html')
+
+    return _render_index_page()
 
 @app.route('/upload', methods=['POST'])
 def upload():
     upload_type = request.form.get('upload_type')
+    is_preset   = (upload_type == 'preset')
 
-    if upload_type == 'preset':
+    if is_preset:
         real_csv  = PRESET_REAL_CSV
         synth_csv = PRESET_SYNTH_CSV
 
@@ -197,6 +349,7 @@ def upload():
                 shutil.copy2(os.path.join(dir_path, f), os.path.join(TMP_DATA_DIR, f))
 
         create_image_df(TMP_DATA_DIR)
+
         real_csv  = USER_REAL_CSV
         synth_csv = USER_SYNTH_CSV
 
@@ -212,41 +365,129 @@ def upload():
             file.save(os.path.join(TMP_DATA_DIR, filename))
 
         create_image_df(TMP_DATA_DIR)
+
         real_csv  = USER_REAL_CSV
         synth_csv = USER_SYNTH_CSV
 
     else:
         flash('Invalid upload type.', 'error')
+
         return redirect(url_for('index'))
-
-    session['analysis_congruence']   = request.form.get('analysis_congruence')   == 'on'
-    session['analysis_coverage']     = request.form.get('analysis_coverage')     == 'on'
-    session['analysis_completeness'] = request.form.get('analysis_completeness') == 'on'
-    session['analysis_consistency']  = request.form.get('analysis_consistency')  == 'on'
-    session['analysis_histogram']    = request.form.get('analysis_histogram')    == 'on'
-
-    session['real_csv']              = real_csv
-    session['synth_csv']             = synth_csv
-    session['is_preset']             = (upload_type == 'preset')
 
     try:
-        real_df                                   = pd.read_csv(real_csv)
-        synth_df                                  = pd.read_csv(synth_csv)
-        real_preview_images, synth_preview_images = generate_previews(real_df, n=5, prefix="real", synth_df=synth_df)
-
-        return render_template(
-                               'index.html',
-                               real_preview_images  = real_preview_images,
-                               synth_preview_images = synth_preview_images,
-                               dataset_ready        = True,
-                               total_images         = len(real_df),
-                               total_synth_images   = len(synth_df)
-                              )
-
-    except Exception as e:
-        flash(f'Error generating preview: {str(e)}', 'error')
+        metadata_real_csv, metadata_synth_csv = _resolve_metadata_csvs(
+            real_csv, 
+            synth_csv, 
+            is_preset = is_preset
+        )
+    except ValueError as e:
+        flash(str(e), 'error')
 
         return redirect(url_for('index'))
+
+    session['real_csv']           = real_csv
+    session['synth_csv']          = synth_csv
+    session['metadata_real_csv']  = metadata_real_csv
+    session['metadata_synth_csv'] = metadata_synth_csv
+    session['is_preset']          = is_preset
+
+    try:
+        preview                    = _prepare_dataset_preview(real_csv, synth_csv, n=5)
+        schema                     = _discover_dataset_schema(real_csv, synth_csv, metadata_real_csv, metadata_synth_csv)
+        session['analysis_config'] = default_config(schema)
+        session['dataset_schema']  = schema
+
+        return _render_index_page(
+            dataset_ready=True,
+            preview=preview,
+            schema=schema,
+            analysis_config=session['analysis_config'],
+        )
+
+    except Exception as e:
+        flash(f'Error loading datasets: {str(e)}', 'error')
+
+        return redirect(url_for('index'))
+
+
+@app.route('/configure', methods=['POST'])
+def configure():
+    if not session.get('real_csv') or not session.get('synth_csv'):
+        flash('Load datasets before configuring analyses.', 'error')
+        return redirect(url_for('index'))
+
+    real_csv  = session['real_csv']
+    synth_csv = session['synth_csv']
+    schema    = session.get('dataset_schema') or _discover_dataset_schema(real_csv, synth_csv)
+
+    parsed, errors = parse_config_from_form(
+        request.form,
+        schema,
+        existing_config=session.get('analysis_config'),
+    )
+
+    if errors:
+        for err in errors:
+            flash(err, 'error')
+        preview = _prepare_dataset_preview(real_csv, synth_csv, n=5)
+        return _render_index_page(
+            dataset_ready=True,
+            preview=preview,
+            schema=schema,
+            analysis_config=parsed,
+        )
+
+    session['analysis_config'] = parsed
+    flash('Analysis configuration saved.', 'success')
+
+    preview = _prepare_dataset_preview(real_csv, synth_csv, n=5)
+    return _render_index_page(
+        dataset_ready  = True,
+        preview        = preview,
+        schema         = schema,
+        analysis_config= parsed,
+    )
+
+
+def _save_fig_dict(figs, out_dir, prefix):
+    """Save a dict of {metric: fig} as individual PNGs."""
+    if not figs:
+        return
+    if isinstance(figs, dict):
+        for metric, fig in figs.items():
+            safe = str(metric).replace(" ", "_").replace("/", "-").replace("%", "pct")
+            path = os.path.join(out_dir, f"{prefix}_{safe}.png")
+
+            try:
+                fig.savefig(path, bbox_inches="tight", pad_inches=0.12)
+
+            except Exception as e:
+                print(f"[Job] Failed to save {path}: {e}")
+    else:
+        try:
+            figs.savefig(
+                os.path.join(out_dir, f"{prefix}.png"),
+                bbox_inches="tight",
+                pad_inches=0.12,
+            )
+        except Exception:
+            pass
+
+
+def _list_per_metric_images(job_output_dir, prefix):
+    pattern = os.path.join(job_output_dir, f"{prefix}_*.png")
+    files   = sorted(glob.glob(pattern))
+    rel_dir = os.path.relpath(job_output_dir, OUTPUT_FOLDER)
+    items   = []
+
+    for f in files:
+        fname    = os.path.basename(f)
+        rel_path = os.path.join(rel_dir, fname).replace("\\", "/")
+        base     = fname.replace(f"{prefix}_", "").replace(".png", "").replace("_", " ")
+
+        items.append((base, rel_path))
+
+    return items
 
 
 @app.route('/generate_report', methods=['POST'])
@@ -264,20 +505,27 @@ def generate_report():
 
     job_id = str(uuid.uuid4())
 
-    with progress_lock:
-        progress_store[job_id] = {'status'  : 'processing', 
-                                  'progress': 0, 
-                                  'error'   : None,
-                                  'config'  : {
-                                               'congruence': session.get('analysis_congruence',     True),
-                                               'coverage': session.get('analysis_coverage',         True),
-                                               'completeness': session.get('analysis_completeness', True),
-                                               'consistency': session.get('analysis_consistency',   True),
-                                               'histogram': session.get('analysis_histogram',       True)
-                                              }
-                                }
+    metadata_real_csv  = session.get('metadata_real_csv') or real_csv
+    metadata_synth_csv = session.get('metadata_synth_csv') or synth_csv
 
-    def run_inference(real_csv, synth_csv, is_preset):
+    if session.get('analysis_config'):
+        analysis_config = deepcopy(session['analysis_config'])
+    else:
+        schema = _discover_dataset_schema(real_csv, synth_csv, metadata_real_csv, metadata_synth_csv)
+        analysis_config = default_config(schema)
+
+    config_flags = enabled_flags(analysis_config)
+
+    with progress_lock:
+        progress_store[job_id] = {
+            'status'         : 'processing',
+            'progress'       : 0,
+            'error'          : None,
+            'config'         : config_flags,
+            'analysis_config': analysis_config,
+        }
+
+    def run_inference(real_csv, synth_csv, metadata_real_csv, metadata_synth_csv, is_preset, cfg):
         try:
             # ----------------------------------------------------------
             # 1. Run inference
@@ -303,32 +551,87 @@ def generate_report():
             # 2. Generate report/output/metrics
             # ----------------------------------------------------------
 
-            # fig, metrics_data = results_analysis(job_output_dir)
-            histo_fig, metrics_data = hist_analysis('./data/features')
-            histo_fig.savefig(os.path.join(job_output_dir, 'histo_fig.png'))
+            metrics_data = None
 
-            coverage_fig            = coverage_analysis('./data/features')
-            coverage_fig.savefig(os.path.join(job_output_dir, 'coverage_fig.png'))
+            if cfg.get('histogram', {}).get('enabled'):
+                histo_fig, metrics_data = hist_analysis(
+                    FEATURES_DIR,
+                    feature_names=cfg['histogram'].get('features'),
+                )
+                histo_fig.savefig(
+                    os.path.join(job_output_dir, 'histo_fig.png'),
+                    bbox_inches="tight",
+                    pad_inches=0.12,
+                )
 
-            congruence_fig          = congruence_analysis('./data/features')
-            congruence_fig.savefig(os.path.join(job_output_dir, 'congruence_fig.png'))
+            if cfg.get('coverage', {}).get('enabled'):
+                coverage_figs = coverage_analysis(
+                    FEATURES_DIR,
+                    feature_names=cfg['coverage'].get('features'),
+                    metrics_to_compute=cfg['coverage'].get('metrics'),
+                )
+                _save_fig_dict(coverage_figs, job_output_dir, prefix="coverage")
 
-            try:
-                cons_df_race, cons_fig_race = consistency_analysis(
-                                                                    real_meta_csv,
-                                                                    group_by="Race",
-                                                                    label="report"
-                                                                  )
-                if cons_fig_race:
-                    cons_fig_race.savefig(os.path.join(job_output_dir, 'consistency_race_fig.png'))
+            if cfg.get('congruence', {}).get('enabled'):
+                congruence_figs = congruence_analysis(
+                    cfg['congruence']['metrics'],
+                    results_dir=FEATURES_DIR,
+                    feature_names=cfg['congruence'].get('features'),
+                )
+                _save_fig_dict(congruence_figs, job_output_dir, prefix="congruence")
 
-                if comp_df is not None and not comp_df.empty:
-                    comp_df.to_json(os.path.join(job_output_dir,      'completeness.json'),         orient='records')
-                if cons_df_hosp is not None and not cons_df_hosp.empty:
-                    cons_df_hosp.to_json(os.path.join(job_output_dir, 'consistency_race.json'), orient='records')
+            if cfg.get('constraint', {}).get('enabled'):
+                violation_df, constraint_fig = constraint_patch_analysis(
+                    FEATURES_DIR,
+                    features_to_check=cfg['constraint'].get('features'),
+                )
+                if constraint_fig is not None:
+                    constraint_fig.savefig(
+                        os.path.join(job_output_dir, 'constraint.png'),
+                        bbox_inches="tight",
+                        pad_inches=0.12,
+                    )
+                if violation_df is not None and not violation_df.empty:
+                    violation_df.to_json(
+                        os.path.join(job_output_dir, 'constraint.json'),
+                        orient='records',
+                    )
 
-            except Exception as e:
-                print(f"[Job {job_id}] Completeness/Consistency analysis skipped or failed: {e}")
+            if cfg.get('consistency', {}).get('enabled'):
+                try:
+                    cons_cfg = cfg['consistency']
+                    cons_df, cons_figs = consistency_analysis(
+                        metadata_real_csv,
+                        metadata_synth_csv,
+                        group_by=cons_cfg.get('group_by', 'Race'),
+                        metric_cols=cons_cfg.get('fields'),
+                        label="report",
+                        metrics_to_plot=cons_cfg.get('metrics'),
+                    )
+                    prefix = f"consistency_{cons_cfg.get('group_by', 'group').replace(' ', '_')}"
+                    _save_fig_dict(cons_figs, job_output_dir, prefix=prefix)
+                except Exception as e:
+                    print(f"[Job {job_id}] Consistency analysis skipped or failed: {e}")
+
+            if cfg.get('completeness', {}).get('enabled'):
+                try:
+                    comp_cfg = cfg['completeness']
+                    comp_df, comp_figs = completeness_analysis(
+                        metadata_real_csv,
+                        metadata_synth_csv,
+                        required_fields=comp_cfg.get('fields'),
+                        label="report",
+                        metrics_to_include=comp_cfg.get('metrics'),
+                    )
+                    _save_fig_dict(comp_figs, job_output_dir, prefix="completeness")
+
+                    if comp_df is not None and not comp_df.empty:
+                        comp_df.to_json(
+                            os.path.join(job_output_dir, 'completeness.json'),
+                            orient='records',
+                        )
+                except Exception as e:
+                    print(f"[Job {job_id}] Completeness analysis skipped or failed: {e}")
 
             plt.close('all')
 
@@ -365,7 +668,17 @@ def generate_report():
                                               })
 
     is_preset = session.get('is_preset', False)
-    thread    = threading.Thread(target=run_inference, args=(real_csv, synth_csv, is_preset))
+    thread = threading.Thread(
+        target=run_inference,
+        args=(
+            real_csv,
+            synth_csv,
+            metadata_real_csv,
+            metadata_synth_csv,
+            is_preset,
+            analysis_config,
+        ),
+    )
     thread.start()
 
     return jsonify({'job_id': job_id})
@@ -387,11 +700,8 @@ def results(job_id):
 
     config            = job.get('config', {})
 
-    histo_fig         = f"{job_id}/histo_fig.png"
-    coverage_fig      = f"{job_id}/coverage_fig.png"
-    congruence_fig    = f"{job_id}/congruence_fig.png"
-
-    metrics_data      = None
+    histo_fig    = f"{job_id}/histo_fig.png"
+    metrics_data = None
 
     metrics_json_path = os.path.join(OUTPUT_FOLDER, job_id, 'metrics.json')
 
@@ -400,12 +710,10 @@ def results(job_id):
             metrics_data = json.load(f)
 
     return render_template('results.html',
-                           job_id         = job_id,
-                           histo_fig      = histo_fig,
-                           coverage_fig   = coverage_fig,
-                           congruence_fig = congruence_fig,
-                           metrics_data   = metrics_data,
-                           config         = config
+                           job_id       = job_id,
+                           histo_fig    = histo_fig,
+                           metrics_data = metrics_data,
+                           config       = config
                            )
 
 
@@ -434,14 +742,14 @@ def results_coverage(job_id):
 
     if not job or job['status'] != 'completed':
         flash('Results not ready yet.', 'error')
-
         return redirect(url_for('index'))
 
-    coverage_fig = f"{job_id}/coverage_fig.png"
+    job_output_dir = os.path.join(OUTPUT_FOLDER, job_id)
+    coverage_images = _list_per_metric_images(job_output_dir, "coverage")
 
     return render_template('results_coverage.html',
                            job_id=job_id,
-                           coverage_fig=coverage_fig
+                           coverage_images=coverage_images
                            )
 
 @app.route('/results/<job_id>/congruence')
@@ -451,14 +759,14 @@ def results_congruence(job_id):
 
     if not job or job['status'] != 'completed':
         flash('Results not ready yet.', 'error')
-
         return redirect(url_for('index'))
 
-    congruence_fig = f"{job_id}/congruence_fig.png"
+    job_output_dir = os.path.join(OUTPUT_FOLDER, job_id)
+    congruence_images = _list_per_metric_images(job_output_dir, "congruence")
 
     return render_template('results_congruence.html',
-                           job_id         = job_id,
-                           congruence_fig = congruence_fig
+                           job_id=job_id,
+                           congruence_images=congruence_images
                            )
 
 @app.route('/results/<job_id>/completeness')
@@ -468,15 +776,41 @@ def results_completeness(job_id):
 
     if not job or job['status'] != 'completed':
         flash('Results not ready yet.', 'error')
+        return redirect(url_for('index'))
+
+    job_output_dir = os.path.join(OUTPUT_FOLDER, job_id)
+    completeness_images = _list_per_metric_images(job_output_dir, "completeness")
+
+    return render_template('results_completeness.html',
+                           job_id=job_id,
+                           completeness_images=completeness_images
+                           )
+
+
+@app.route('/results/<job_id>/constraint')
+def results_constraint(job_id):
+    with progress_lock:
+        job = progress_store.get(job_id)
+
+    if not job or job['status'] != 'completed':
+        flash('Results not ready yet.', 'error')
 
         return redirect(url_for('index'))
 
-    completeness_fig = f"{job_id}/completeness_fig.png"
+    constraint_fig       = f"{job_id}/constraint.png"
+    constraint_json_path = os.path.join(OUTPUT_FOLDER, job_id, 'constraint.json')
+    violation_data       = None
 
-    return render_template('results_completeness.html',
-                           job_id           = job_id,
-                           completeness_fig = completeness_fig
-                           )
+    if os.path.exists(constraint_json_path):
+        with open(constraint_json_path, 'r') as f:
+            violation_data = json.load(f)
+
+    return render_template(
+        'results_constraint.html',
+        job_id         = job_id,
+        constraint_fig = constraint_fig,
+        violation_data = violation_data,
+    )
 
 
 @app.route('/results/<job_id>/consistency')
@@ -488,10 +822,21 @@ def results_consistency(job_id):
         flash('Results not ready yet.', 'error')
         return redirect(url_for('index'))
 
-    return render_template('results_consistency.html',
-                           job_id                   = job_id,
-                           consistency_race_fig    = f"{job_id}/consistency_race_fig.png",
-                           consistency_vendor_fig  = f"{job_id}/consistency_vendor_fig.png")
+    job_output_dir     = os.path.join(OUTPUT_FOLDER, job_id)
+    consistency_images = []
+
+    for f in sorted(glob.glob(os.path.join(job_output_dir, "consistency_*.png"))):
+        fname    = os.path.basename(f)
+        rel_path = os.path.join(job_id, fname).replace("\\", "/")
+        title    = fname.replace("consistency_", "").replace(".png", "").replace("_", " ").title()
+
+        consistency_images.append((title, rel_path))
+
+    return render_template(
+        'results_consistency.html',
+        job_id             = job_id,
+        consistency_images = consistency_images,
+    )
 
 @app.route('/download/<job_id>')
 def download_results(job_id):
