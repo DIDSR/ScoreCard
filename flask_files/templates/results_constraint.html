@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreCard - Constraint Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="page-wrapper page-wrapper--wide">
+
+        <header class="site-header">
+            <div class="header-left">
+                <span class="header-placeholder">Logo</span>
+            </div>
+            <div class="header-center">
+                <h1>ScoreCard</h1>
+                <p class="subtitle">Comparison of Source and Synthetic Datasets</p>
+            </div>
+            <div class="header-right">
+                <span class="header-placeholder"><a href="https://www.github.com/DIDSR/">github.com/DIDSR/</a></span>
+            </div>
+        </header>
+
+        <main class="main-content">
+
+            <div class="results-page-title">
+                <h2>Constraint Analysis</h2>
+                <div class="results-job-row">
+                    <p class="results-job-id">Job ID: <code>{{ job_id }}</code></p>
+                    <a href="{{ url_for('download_results', job_id=job_id) }}" class="btn btn-primary">
+                        <span>💾</span> Download All
+                    </a>
+                </div>
+            </div>
+
+            <div class="analysis-card">
+                <div class="analysis-card-header">
+                    <span class="card-step step-constraint">Constraint</span>
+                    <h2 class="card-title">Constraint Violation Assessment</h2>
+                </div>
+                <div class="analysis-card-body">
+                    <div class="analysis-description">
+                        <p>
+                            This analysis measures how often synthetic feature values violate bounds
+                            derived from the real dataset. For each feature, lower and upper limits are
+                            set from the 1st and 99th percentiles of real data; synthetic values
+                            outside that range count as violations.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Constraint Violation Rate</strong> — The percentage of synthetic
+                                samples that fall below the real-data lower bound or above the upper bound.
+                            </li>
+                            <li>
+                                <strong>Lower / Upper Bound</strong> — Percentile-based limits estimated
+                                from the real feature distribution.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="figure-gallery">
+                        <figure class="figure-plot">
+                            <div class="figure-plot__frame">
+                                <img src="{{ url_for('static', filename='outputs/' + constraint_fig) }}"
+                                     alt="Constraint violation rate chart">
+                            </div>
+                        </figure>
+                    </div>
+
+                    {% if violation_data %}
+                    <div class="metrics-table-container">
+                        <h3>Violation Summary</h3>
+                        <table class="metrics-table">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th>Violation Rate (%)</th>
+                                    <th>Lower Bound</th>
+                                    <th>Upper Bound</th>
+                                    <th>n (Real)</th>
+                                    <th>n (Synth)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in violation_data %}
+                                <tr>
+                                    <td>{{ row.Feature }}</td>
+                                    <td>{{ row['Synth_Violation_%'] }}</td>
+                                    <td>{{ row.Lower_Bound }}</td>
+                                    <td>{{ row.Upper_Bound }}</td>
+                                    <td>{{ row.n_real }}</td>
+                                    <td>{{ row.n_synth }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <a href="{{ url_for('results', job_id=job_id) }}" class="btn btn-primary">
+                    <span>←</span> Back to Results Overview
+                </a>
+                <a href="{{ url_for('index') }}" class="btn btn-primary">
+                    Back to Home
+                </a>
+            </div>
+
+        </main>
+
+        <footer class="site-footer">
+            <div class="footer-left">
+                <span>2026 CDRH/OSEL/DIDSR</span>
+            </div>
+            <div class="footer-middle"></div>
+            <div class="footer-right">
+                <span>Contact: Alexander R. Webber <a href="mailto:alexander.webber@fda.hhs.gov">alexander.webber@fda.hhs.gov</a></span>
+            </div>
+        </footer>
+
+    </div>
+
+</body>
+</html>

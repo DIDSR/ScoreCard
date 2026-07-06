@@ -71,7 +71,7 @@
 
                         <div id="field-preset" class="upload-field upload-field-info">
                             <span class="upload-icon">📂</span>
-                            <p>Using <code>data/real_patch_appearance.csv</code> and <code>data/static_patch_appearance.csv</code>, along with associated images.</p>
+                            <p>Using <code>data/real_patch_appearance.csv</code> and <code>data/kde_patch_appearance.csv</code> for patch analyses, plus <code>data/*_with_metadata.csv</code> for Completeness and Consistency.</p>
                         </div>
 
                         <div id="field-directory" class="upload-field" style="display:none;">
@@ -143,30 +143,9 @@
                             <p id="file-label" class="file-label-text" style="display:none;"></p>
                         </div>
 
-                        <div class="upload-field" style="display: block; margin-bottom: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0;">
-                        <label class="field-label">Select Analyses to Run</label>
-                        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="analysis_congruence" {% if session.get('analysis_congruence', True) %}checked{% endif %}> Congruence
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="analysis_coverage" {% if session.get('analysis_coverage', True) %}checked{% endif %}> Coverage
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="analysis_completeness" {% if session.get('analysis_completeness', True) %}checked{% endif %}> Completeness
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="analysis_consistency" {% if session.get('analysis_consistency', True) %}checked{% endif %}> Consistency
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                        <input type="checkbox" name="analysis_histogram" {% if session.get('analysis_histogram', True) %}checked{% endif %}> Histograms
-                        </label>
-                        </div>
-                        </div>
-
                         <div class="card-actions">
                             <button type="submit" class="btn btn-primary">
-                                <span>📥</span> Load Images
+                                <span>📥</span> Load Datasets
                             </button>
                         </div>
 
@@ -183,10 +162,9 @@
                     <h2 class="card-title">Image Previews</h2>
                 </div>
                 <div class="card-body">
+                    {% if images_available %}
                     <p class="card-subtitle">Sample images from the selected dataset. Review before generating the report.</p>
 
-                    <!-- Real previews -->
-                    <!-- ========== REAL IMAGES ========== -->
                     <div class="preview-section">
                         <div class="preview-header">
                             <h2 class="preview-title">
@@ -196,18 +174,17 @@
                                 Showing <strong>{{ real_preview_images|length }}</strong> of <strong>{{ total_images }}</strong>
                             </span>
                         </div>
-                        
+
                         <div class="preview-gallery">
                             {% for img in real_preview_images %}
                                 <div class="preview-item">
-                                    <img src="{{ url_for('static', filename='uploads/' + img) }}" 
+                                    <img src="{{ url_for('static', filename='uploads/' + img) }}"
                                         alt="Real preview {{ loop.index }}">
                                 </div>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- ========== SYNTHETIC IMAGES ========== -->
                     <div class="preview-section">
                         <div class="preview-header">
                             <h2 class="preview-title">
@@ -217,22 +194,167 @@
                                 Showing <strong>{{ synth_preview_images|length }}</strong> of <strong>{{ total_synth_images }}</strong>
                             </span>
                         </div>
-                        
+
                         <div class="preview-gallery">
                             {% for img in synth_preview_images %}
+                                {% if img %}
                                 <div class="preview-item">
-                                    <img src="{{ url_for('static', filename='uploads/' + img) }}" 
+                                    <img src="{{ url_for('static', filename='uploads/' + img) }}"
                                         alt="Synthetic preview {{ loop.index }}">
                                 </div>
+                                {% endif %}
                             {% endfor %}
                         </div>
                     </div>
+                    {% else %}
+                    <div class="preview-unavailable-note">
+                        <span class="preview-unavailable-icon">🖼️</span>
+                        <p>{{ preview_message }}</p>
+                        <p class="preview-unavailable-detail">
+                            Loaded <strong>{{ total_images }}</strong> real and
+                            <strong>{{ total_synth_images }}</strong> synthetic CSV records.
+                            You can continue to generate the report.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ===== CARD: Configure Analyses ===== -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-step">Step 3</span>
+                    <h2 class="card-title">Configure Analyses</h2>
+                </div>
+                <div class="card-body">
+                    <p class="card-subtitle">
+                        Choose which analyses to run, then pick metrics and features/metadata for each.
+                    </p>
+
+                    {% if schema.metadata_real_csv and schema.metadata_synth_csv %}
+                    <p class="config-metadata-source">
+                        Completeness and Consistency use metadata columns from
+                        <code>{{ schema.metadata_real_csv.split('/')[-1] }}</code> and
+                        <code>{{ schema.metadata_synth_csv.split('/')[-1] }}</code>
+                        (not patch ML features).
+                    </p>
+                    {% endif %}
+
+                    {% if schema.warnings %}
+                    <div class="config-warnings">
+                        {% for warning in schema.warnings %}
+                        <p>{{ warning }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form id="configure-form" action="/configure" method="post">
+                        <div class="config-accordion-list">
+                            {% for entry in analysis_registry %}
+                            {% set cfg = analysis_config.get(entry.id, {}) %}
+                            {% set options = feature_options_for_analysis(entry.id, schema) %}
+                            <details class="config-accordion" data-analysis="{{ entry.id }}">
+                                <summary class="config-accordion-summary">
+                                    <span class="card-step {{ entry.step_class }}">{{ entry.label }}</span>
+                                    <label class="config-enable-toggle" onclick="event.stopPropagation();">
+                                        <input type="checkbox"
+                                               name="{{ entry.id }}_enabled"
+                                               class="analysis-enable-checkbox"
+                                               data-target="{{ entry.id }}"
+                                               {% if cfg.get('enabled', True) %}checked{% endif %}>
+                                        Enable
+                                    </label>
+                                </summary>
+
+                                <div class="config-accordion-body" id="config-body-{{ entry.id }}">
+                                    <p class="config-description">{{ entry.description }}</p>
+
+                                    {% if entry.metrics %}
+                                    <div class="config-section">
+                                        <div class="config-section-header">
+                                            <h4>Metrics</h4>
+                                            <div class="config-bulk-actions">
+                                                <button type="button" class="config-link-btn" onclick="toggleGroup('{{ entry.id }}_metrics', true)">Select all</button>
+                                                <button type="button" class="config-link-btn" onclick="toggleGroup('{{ entry.id }}_metrics', false)">Clear</button>
+                                            </div>
+                                        </div>
+                                        <div class="config-checkbox-grid" data-group="{{ entry.id }}_metrics">
+                                            {% for metric in entry.metrics %}
+                                            <label class="config-checkbox-item">
+                                                <input type="checkbox"
+                                                       name="{{ entry.id }}_metrics"
+                                                       value="{{ metric.id }}"
+                                                       {% if cfg.get('metrics', {}).get(metric.id, True) %}checked{% endif %}>
+                                                {{ metric.label }}
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if entry.get('has_group_by') %}
+                                    <div class="config-section">
+                                        <h4>Group by</h4>
+                                        <select name="{{ entry.id }}_group_by" class="text-input config-select">
+                                            {% for col in schema.categorical_columns %}
+                                            <option value="{{ col }}" {% if cfg.get('group_by') == col %}selected{% endif %}>{{ col }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {% if not schema.categorical_columns %}
+                                        <p class="config-hint">No categorical columns available in the loaded CSVs.</p>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if options %}
+                                    <div class="config-section">
+                                        <div class="config-section-header">
+                                            <h4>{{ entry.features_label }}</h4>
+                                            <div class="config-bulk-actions">
+                                                <button type="button" class="config-link-btn" onclick="toggleGroup('{{ entry.id }}_items', true)">Select all</button>
+                                                <button type="button" class="config-link-btn" onclick="toggleGroup('{{ entry.id }}_items', false)">Clear</button>
+                                            </div>
+                                        </div>
+                                        <div class="config-checkbox-grid config-checkbox-grid--tall" data-group="{{ entry.id }}_items">
+                                            {% for option in options %}
+                                            <label class="config-checkbox-item">
+                                                {% if entry.data_source == 'patch_npz' %}
+                                                <input type="checkbox"
+                                                       name="{{ entry.id }}_features"
+                                                       value="{{ option }}"
+                                                       {% if option in cfg.get('features', []) %}checked{% endif %}>
+                                                {% else %}
+                                                <input type="checkbox"
+                                                       name="{{ entry.id }}_fields"
+                                                       value="{{ option }}"
+                                                       {% if option in cfg.get('fields', []) %}checked{% endif %}>
+                                                {% endif %}
+                                                {{ option }}
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <p class="config-hint">No {{ entry.features_label|lower }} available for this dataset.</p>
+                                    {% endif %}
+                                </div>
+                            </details>
+                            {% endfor %}
+                        </div>
+
+                        <div class="card-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <span>💾</span> Save Configuration
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- ===== CARD: Generate Report ===== -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-step">Step 3</span>
+                    <span class="card-step">Step 4</span>
                     <h2 class="card-title">Generate Report</h2>
                 </div>
                 <div class="card-body">
@@ -297,6 +419,30 @@
                 label.style.display = 'none';
             }
         }
+
+        function toggleGroup(groupKey, checked) {
+            const container = document.querySelector(`[data-group="${groupKey}"]`);
+            if (!container) return;
+            container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = checked;
+            });
+        }
+
+        function syncAnalysisSections() {
+            document.querySelectorAll('.analysis-enable-checkbox').forEach(cb => {
+                const body = document.getElementById('config-body-' + cb.dataset.target);
+                if (!body) return;
+                body.classList.toggle('config-accordion-body--disabled', !cb.checked);
+                body.querySelectorAll('input, select').forEach(el => {
+                    el.disabled = !cb.checked;
+                });
+            });
+        }
+
+        document.querySelectorAll('.analysis-enable-checkbox').forEach(cb => {
+            cb.addEventListener('change', syncAnalysisSections);
+        });
+        syncAnalysisSections();
 
         function updateDirectoryFileLabel(input, labelId) {
             const label = document.getElementById(labelId);

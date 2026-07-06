@@ -286,6 +286,19 @@
                         </div>
                     </div>
                 </a>
+
+                <!-- Constraint Analysis -->
+                <a href="{{ url_for('results_constraint', job_id=job_id) }}" class="analysis-nav-card {% if not config.get('constraint', True) %}disabled{% endif %}">
+                    <div class="nav-card-header">
+                        <span class="card-step step-constraint">Constraint</span>
+                    </div>
+                    <div class="nav-card-body">
+                        <p>Assess how often synthetic feature values fall outside real-data percentile bounds.</p>
+                        <div class="nav-card-footer">
+                            <span class="nav-link-text">View Full Constraint Report →</span>
+                        </div>
+                    </div>
+                </a>
             </div>
 
             <!-- ===== Back to Home action ===== -->

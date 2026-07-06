@@ -5,75 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScoreCard - Completeness Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .figure-container img {
-            width: 100%;
-            height: auto;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        .analysis-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            background: white;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            overflow: hidden;
-            margin-bottom: 2rem;
-        }
-
-        .analysis-card-header {
-            padding: 1.25rem 1.75rem;
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .analysis-card-header .card-step {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            background: #e0e7ff;
-            padding: 4px 14px;
-            border-radius: 9999px;
-            white-space: nowrap;
-        }
-
-        .analysis-card-header .card-title {
-            margin: 0;
-            font-size: 1.35rem;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .analysis-card-body {
-            padding: 2rem 1.75rem;
-        }
-
-        .analysis-description {
-            max-width: 820px;
-            color: #475569;
-            font-size: 1.02rem;
-            line-height: 1.7;
-            margin-bottom: 1.75rem;
-        }
-
-        .nav-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-    </style>
 </head>
 <body>
 
-    <div class="page-wrapper">
+    <div class="page-wrapper page-wrapper--wide">
 
         <!-- ===== HEADER ===== -->
         <header class="site-header">
@@ -132,8 +67,17 @@
 </div>
 
 
-                    <div class="figure-container">
-                        <img src="{{ url_for('static', filename='outputs/' + completeness_fig) }}" alt="Completeness Analysis Report">
+                    <div class="figure-gallery">
+                    {% for title, fname in completeness_images %}
+                    <figure class="figure-plot">
+                        <figcaption class="figure-plot__caption">{{ title }}</figcaption>
+                        <div class="figure-plot__frame">
+                            <img src="{{ url_for('static', filename='outputs/' + fname) }}" alt="{{ title }}">
+                        </div>
+                    </figure>
+                    {% else %}
+                    <p>No completeness images found.</p>
+                    {% endfor %}
                     </div>
                 </div>
             </div>
