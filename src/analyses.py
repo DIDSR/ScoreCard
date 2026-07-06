@@ -337,6 +337,155 @@ def consistency_analysis(
 
     return cons_df, figs
 
+def _resolve_image_path(path, path_root=None):
+    """Resolve a CSV filepath, falling back to path_root for repo-root-relative paths."""
+    path = str(path)
+
+    if os.path.isfile(path):
+        return path
+
+    if path_root:
+        candidate = os.path.normpath(os.path.join(path_root, path))
+
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def _sample_image_pairs(real_df, synth_df, n=5, seed=None, path_root=None):
+    """
+    Sample up to n (real, synth) image path pairs, matching each real image to a
+    synthetic image whose filename contains the real filename stem — the same
+    pairing used by the webapp preview.
+    """
+    if 'filepath' not in real_df.columns or 'filepath' not in synth_df.columns:
+        return []
+
+    rng         = np.random.default_rng(seed)
+    order       = rng.permutation(len(real_df))
+    synth_paths = synth_df['filepath'].astype(str)
+    pairs       = []
+
+    for idx in order:
+        if len(pairs) >= n:
+            break
+
+        real_path = _resolve_image_path(real_df.iloc[idx]['filepath'], path_root)
+
+        if real_path is None:
+            continue
+
+        real_stem = os.path.splitext(os.path.basename(real_path))[0]
+        matching  = synth_df[synth_paths.str.contains(real_stem, regex=False, na=False)]
+
+        if matching.empty:
+            continue
+
+        synth_row  = matching.sample(1, random_state=int(rng.integers(0, 2**31))).iloc[0]
+        synth_path = _resolve_image_path(synth_row['filepath'], path_root)
+
+        if synth_path is None:
+            continue
+
+        pairs.append((real_path, synth_path))
+
+    return pairs
+
+
+def scorecard_analysis(
+    real_csv,
+    synth_csv,
+    metadata_real_csv=None,
+    metadata_synth_csv=None,
+    results_dir='./data/features',
+    real_features='real_patch_appearance_features.npz',
+    synth_features='kde_patch_appearance_features.npz',
+    features_to_check=None,
+    n_images=5,
+    seed=None,
+    path_root=None,
+):
+    from src.visualization import create_scorecard_figure
+
+    real_df               = pd.read_csv(real_csv)
+    synth_df              = pd.read_csv(synth_csv)
+
+    n_real                = len(real_df)
+    n_synth               = len(synth_df)
+
+    meta_real_df          = pd.read_csv(metadata_real_csv or real_csv)
+    meta_synth_df         = pd.read_csv(metadata_synth_csv or synth_csv)
+
+    meta_real_df.columns  = meta_real_df.columns.str.strip()
+    meta_synth_df.columns = meta_synth_df.columns.str.strip()
+
+    required_fields = list(
+        set(meta_real_df.columns).intersection(set(meta_synth_df.columns))
+    )
+
+    real_comp  = compute_completeness(meta_real_df,  required_fields=required_fields, label="scorecard_real")
+    synth_comp = compute_completeness(meta_synth_df, required_fields=required_fields, label="scorecard_synth")
+
+    completeness = {
+        'Real' : real_comp.get('Required_Fields_Completeness'),
+        'Synth': synth_comp.get('Required_Fields_Completeness'),
+    }
+
+    real_features_path  = os.path.join(results_dir, real_features)
+    synth_features_path = os.path.join(results_dir, synth_features)
+
+    real_feat_df        = combine_features([real_features_path])
+    synth_feat_df       = combine_features([synth_features_path])
+
+    real_feat_df, synth_feat_df, kept_features = filter_features(real_feat_df, synth_feat_df, 0.5)
+
+    coverage = {
+        'Real' : compute_coverage(real_feat_df[kept_features],  "Real").get('Variance'),
+        'Synth': compute_coverage(synth_feat_df[kept_features], "Synth").get('Variance'),
+    }
+
+    violation_df = compute_constraint(
+        load_features(real_features_path),
+        load_features(synth_features_path),
+        features_to_check=features_to_check,
+    )
+
+    image_pairs = _sample_image_pairs(real_df, synth_df, n=n_images, seed=seed, path_root=path_root)
+
+    summary_rows = [
+        ('Real samples',      n_real),
+        ('Synthetic samples', n_synth),
+        ('Image features',    len(kept_features)),
+        ('Metadata fields',   len(required_fields)),
+    ]
+
+    summary_df = pd.DataFrame([
+        {
+            'Dataset'                     : 'Real',
+            'Samples'                     : n_real,
+            'Required_Fields_Completeness': completeness['Real'],
+            'Coverage_Variance'           : coverage['Real'],
+        },
+        {
+            'Dataset'                     : 'Synth',
+            'Samples'                     : n_synth,
+            'Required_Fields_Completeness': completeness['Synth'],
+            'Coverage_Variance'           : coverage['Synth'],
+        },
+    ])
+
+    fig = create_scorecard_figure(
+        summary_rows,
+        completeness,
+        coverage,
+        violation_df,
+        image_pairs,
+    )
+
+    return summary_df, fig
+
+
 def constraint_patch_analysis(
     results_dir='./data/features',
     real_features='real_patch_appearance_features.npz',
@@ -354,7 +503,7 @@ def constraint_analysis(real_features, synth_features, features_to_check=None):
     violation_df = compute_constraint(
         real_features,
         synth_features,
-        features_to_check=features_to_check,
+        features_to_check = features_to_check,
     )
 
     fig = create_barplot(

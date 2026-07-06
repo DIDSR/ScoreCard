@@ -1,3 +1,5 @@
+import os
+
 import numpy              as     np
 import pandas             as     pd
 import seaborn            as     sns
@@ -11,8 +13,8 @@ from   scipy.stats        import gaussian_kde
 
 from   matplotlib         import pyplot as plt
 
-PLOT_DPI = 220
-WEB_FIG_WIDTH = 12.5
+PLOT_DPI          = 220
+WEB_FIG_WIDTH     = 12.5
 WEB_SUPTITLE_SIZE = 20
 
 def _finalize_figure(fig, *, top=0.93):
@@ -348,6 +350,160 @@ def create_barplot(
         )
 
     _finalize_figure(fig)
+    return fig
+
+
+def _scorecard_metric_bar(ax, values_by_dataset, *, title, ylabel, label_fmt="{:.2f}"):
+    hue_palette = ["#5470C6", "#EE6666"]
+    labels      = list(values_by_dataset.keys())
+    values      = [values_by_dataset[k] for k in labels]
+    heights     = [v if v is not None and np.isfinite(v) else 0.0 for v in values]
+
+    bars = ax.bar(
+        labels,
+        heights,
+        color     = hue_palette[:len(labels)],
+        edgecolor = "black",
+        linewidth = 0.75,
+        width     = 0.6,
+    )
+
+    for bar, value in zip(bars, values):
+        text = label_fmt.format(value) if value is not None and np.isfinite(value) else "N/A"
+        ax.annotate(
+            text,
+            (bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            xytext     = (0, 4),
+            textcoords = "offset points",
+            ha         = "center",
+            fontsize   = 12,
+        )
+
+    ax.set_title(title, fontsize=17, fontweight="bold", pad=10)
+    ax.set_ylabel(ylabel, fontsize=13, labelpad=6)
+    ax.tick_params(axis="both", labelsize=12)
+    ax.grid(True, axis="y", alpha=0.28)
+    ax.margins(y=0.18)
+
+
+def create_scorecard_figure(
+    summary_rows,
+    completeness,
+    coverage,
+    violation_df,
+    image_pairs,
+    suptitle="ScoreCard Summary",
+):
+    apply_large_plot_style()
+
+    n_images = max(len(image_pairs), 1)
+    fig      = plt.figure(figsize=(22, 13), dpi=PLOT_DPI)
+    outer    = fig.add_gridspec(
+        2, 1,
+        height_ratios = [1.15, 1.5],
+        left          = 0.05,
+        right         = 0.98,
+        top           = 0.88,
+        bottom        = 0.03,
+        hspace        = 0.30,
+    )
+    top      = outer[0].subgridspec(1, 4, wspace=0.45)
+    bottom   = outer[1].subgridspec(2, n_images, wspace=0.08, hspace=0.16)
+
+    ax_table = fig.add_subplot(top[0, 0])
+    ax_table.axis("off")
+    ax_table.set_title("Dataset Summary", fontsize=17, fontweight="bold", pad=10)
+
+    cell_text = [[str(label), f"{value:,}" if isinstance(value, (int, np.integer)) else str(value)]
+                 for label, value in summary_rows]
+    table     = ax_table.table(
+        cellText  = cell_text,
+        colWidths = [0.62, 0.38],
+        cellLoc   = "left",
+        loc       = "center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(14)
+    table.scale(1, 2.4)
+
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor("#cbd5e1")
+        cell.set_linewidth(0.8)
+        if col == 1:
+            cell.get_text().set_ha("right")
+            cell.get_text().set_fontweight("bold")
+        if row % 2 == 0:
+            cell.set_facecolor("#f8fafc")
+
+    ax_comp = fig.add_subplot(top[0, 1])
+    _scorecard_metric_bar(
+        ax_comp,
+        completeness,
+        title     = "Completeness",
+        ylabel    = "Required Fields Complete (%)",
+        label_fmt = "{:.2f}",
+    )
+
+    ax_cov = fig.add_subplot(top[0, 2])
+    _scorecard_metric_bar(
+        ax_cov,
+        coverage,
+        title     = "Coverage",
+        ylabel    = "Variance",
+        label_fmt = "{:.4f}",
+    )
+
+    ax_con = fig.add_subplot(top[0, 3])
+
+    if violation_df is None or len(violation_df) == 0:
+        ax_con.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=15)
+        ax_con.axis("off")
+    else:
+        sub  = violation_df.sort_values("Synth_Violation_%", ascending=True)
+        bars = ax_con.barh(
+            sub["Feature"].str.replace("_", " "),
+            sub["Synth_Violation_%"],
+            color     = "#EE6666",
+            edgecolor = "black",
+            linewidth = 0.75,
+        )
+        ax_con.bar_label(bars, fmt="%.1f", padding=4, fontsize=11)
+        ax_con.set_xlabel("Violation Rate (%)", fontsize=13, labelpad=6)
+        ax_con.tick_params(axis="both", labelsize=11)
+        ax_con.grid(True, axis="x", alpha=0.28)
+        ax_con.margins(x=0.18)
+
+    ax_con.set_title("Constraint", fontsize=17, fontweight="bold", pad=10)
+
+    row_labels = ["Real", "Synthetic"]
+
+    for col, (real_path, synth_path) in enumerate(image_pairs):
+        for row, path in enumerate([real_path, synth_path]):
+            ax = fig.add_subplot(bottom[row, col])
+
+            img = plt.imread(path)
+            ax.imshow(img, cmap="gray" if img.ndim == 2 else None)
+
+            stem = os.path.splitext(os.path.basename(str(path)))[0]
+            if len(stem) > 26:
+                stem = stem[:24] + "…"
+            ax.set_title(stem, fontsize=9)
+
+            ax.set_xticks([])
+            ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+            if col == 0:
+                ax.set_ylabel(row_labels[row], fontsize=16, fontweight="bold", labelpad=10)
+
+    if not image_pairs:
+        ax = fig.add_subplot(bottom[:, :])
+        ax.text(0.5, 0.5, "No paired sample images available", ha="center", va="center", fontsize=15)
+        ax.axis("off")
+
+    fig.suptitle(suptitle, fontsize=26, fontweight="bold", y=0.97)
+
     return fig
 
 
