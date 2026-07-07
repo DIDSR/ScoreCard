@@ -1,5 +1,5 @@
 <p align="center">
- <h1 align="center">Synthetic Data ScoreCard: A Data Quality Evaluation Toolbox for Synthetic Medical Data</h1>
+ <h1 align="center">Synthetic Data ScoreCard: A Data Quality Evaluation Toolbox for Synthetic Medical Datasets</h1>
 </p>
 
 <p align="center">
