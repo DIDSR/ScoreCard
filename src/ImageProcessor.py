@@ -172,104 +172,134 @@ class ImageProcessor (object):
     ## +---------------------------------    
     @property
     def image_path (self):
+        """Path to the input image file."""
         return self._image_path
     @property
     def dataset_name (self):
+        """Name of the dataset associated with this image."""
         return self._dataset_name        
     @property
     def image_type (self):
+        """Image type label, either ``'real'`` or ``'synthetic'``."""
         return self._image_type
     @property
     def breast_area (self):
+        """Fraction of image pixels occupied by the detected breast region."""
         return self._breast_area     
     @property
     def angles_along_edge (self):
+        """Angles in degrees along the ordered breast edge trajectory."""
         return self._angles_along_edge
     @property
     def pixels_along_edge (self):
+        """Coordinates of edge pixels along the ordered breast edge trajectory."""
         return self._pixels_along_edge        
     @property
     def binned_angle_gradients (self):
+        """Binned sums of angle gradients along the breast edge."""
         return self._binned_angle_gradients
     @property
     def normalized_gradient_distribution (self):
+        """Normalized distribution of binned angle gradients."""
         return self._normalized_gradient_distribution
 
     @property
     def image (self):
+        """Grayscale image array loaded from ``image_path``."""
         return self._image
     @property
     def skeleton (self):
+        """One-pixel-wide binary skeleton of the breast edge."""
         return self._skeleton
 
     @property
     def isMLO (self):
+        """Whether the image is an MLO view requiring edge cleanup."""
         return self._isMLO
     @isMLO.setter
     def isMLO (self, value):
+        """Set whether the image is an MLO view."""
         self._isMLO = self._check_boolean ("isMLO", value)
 
     @property
     def isCSAW (self):
+        """Whether the image belongs to the CSAW dataset."""
         return self._isCSAW
     @isCSAW.setter
     def isCSAW (self, value):
+        """Set whether the image belongs to the CSAW dataset."""
         self._isCSAW = self._check_boolean ("isCSAW", value)
 
     @property
     def output_path (self):
+        """Directory path for saving plots and intermediate outputs."""
         return self._output_path
     @output_path.setter
     def output_path (self, value):
+        """Set the directory path for saving plots and intermediate outputs."""
         self._output_path = self._check_path (value, create=True)
 
     @property
     def short_filename (self):
+        """Short identifier used in output filenames."""
         return self._short_filename
     @short_filename.setter
     def short_filename (self, value):
+        """Set the short identifier used in output filenames."""
         self._short_filename = self._check_str ("short_filename", value)
 
     @property
     def mask_threshold (self):
+        """Intensity threshold used to create the binary breast mask."""
         return self._mask_threshold
     @mask_threshold.setter
     def mask_threshold (self, value):
+        """Set the intensity threshold for binary mask creation."""
         self._mask_threshold = self._check_positive_integer ("mask_threshold", value)
 
     @property
     def edge_bin_counts (self):
+        """Number of bins used to group edge pixels for gradient features."""
         return self._edge_bin_counts
     @edge_bin_counts.setter
     def edge_bin_counts (self, value):
+        """Set the number of bins for edge-pixel gradient grouping."""
         self._edge_bin_counts = self._check_positive_integer ("edge_bin_counts", value)
 
     @property
     def distribution_bin_counts (self):
+        """Number of bins used for the normalized gradient distribution."""
         return self._distribution_bin_counts
     @distribution_bin_counts.setter
     def distribution_bin_counts (self, value):
+        """Set the number of bins for the normalized gradient distribution."""
         self._distribution_bin_counts = self._check_positive_integer ("distribution_bin_counts", value)
 
     @property
     def smooth_window_size (self):
+        """Window size for smoothing angles along the edge."""
         return self._smooth_window_size
     @smooth_window_size.setter
     def smooth_window_size (self, value):
+        """Set the moving-average window size for edge-angle smoothing."""
         self._smooth_window_size = self._check_positive_integer ("smooth_window_size", value)
 
     @property
     def do_reprocess (self):
+        """Whether intermediate processing steps should be rerun."""
         return self._do_reprocess
     @do_reprocess.setter
     def do_reprocess (self, value):
+        """Set whether intermediate processing steps should be rerun."""
         self._do_reprocess = self._check_boolean ("do_reprocess", value)
 
     @property
     def do_plots (self):
+        """Whether final diagnostic plots should be generated."""
         return self._do_plots
     @do_plots.setter
     def do_plots (self, value):
+        """Enable or disable final diagnostic plot generation."""
         self._do_plots = self._check_boolean ("do_plots", value)
         ## If not do_plots, do not create the plot path.
         if not value: return            
@@ -280,10 +310,12 @@ class ImageProcessor (object):
         os.makedirs (self._output_plot_path, exist_ok=True)
 
     @property
-    def do_intermediate_plots (self):   
+    def do_intermediate_plots (self):
+        """Whether intermediate processing-step plots should be generated."""
         return self._do_intermediate_plots
     @do_intermediate_plots.setter
     def do_intermediate_plots (self, value):
+        """Enable or disable intermediate processing-step plot generation."""
         self._do_intermediate_plots = self._check_boolean ("do_intermediate_plots", value)
         ## If not do_intermediate_plots, do not create the intermediate plot path.
         if not value: return

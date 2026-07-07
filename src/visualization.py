@@ -18,11 +18,26 @@ WEB_FIG_WIDTH     = 12.5
 WEB_SUPTITLE_SIZE = 20
 
 def _finalize_figure(fig, *, top=0.93):
+    """Apply tight layout to a figure with configurable top margin.
+
+    Args:
+        fig: Matplotlib figure to finalize.
+        top: Upper bound of the subplot area as a fraction of the figure height.
+            Defaults to 0.93.
+
+    Returns:
+        The same figure with layout adjustments applied.
+    """
     fig.tight_layout(rect=[0, 0, 1, top], pad=1.4, h_pad=1.2, w_pad=1.0)
 
     return fig
 
 def apply_large_plot_style():
+    """Configure seaborn and matplotlib for large, web-friendly plots.
+
+    Sets a white-grid theme and updates global rcParams for figure DPI,
+    font sizes, label padding, and title styling.
+    """
     sns.set_theme(style="whitegrid", context="talk")
 
     plt.rcParams.update({
@@ -46,6 +61,18 @@ def apply_large_plot_style():
     })
 
 def print_histograms(real_features, synth_features):
+    """Plot overlaid histograms comparing real and synthetic feature distributions.
+
+    For each feature, draws density histograms, KDE curves, mean lines, and
+    95% bootstrap confidence intervals for both datasets.
+
+    Args:
+        real_features: Mapping from feature name to array-like real values.
+        synth_features: Mapping from feature name to array-like synthetic values.
+
+    Returns:
+        Matplotlib figure containing one subplot per feature.
+    """
     apply_large_plot_style()
 
     feature_names = list(real_features.keys())
@@ -161,14 +188,15 @@ def print_histograms(real_features, synth_features):
 
 
 def visualize_gabor_and_skeleton_examples(image, mask, n_examples=4):
-    """
-    Visualizes Gabor filter responses and skeletons for a sample of nuclei.
+    """Visualize Gabor filter responses and skeletons for sample nuclei.
 
-    Parameters
-    ----------
-    image    : np.ndarray  - grayscale or RGB image
-    mask     : np.ndarray  - integer label mask (each nucleus has a unique label)
-    n_examples : int       - number of nuclei to visualize
+    Args:
+        image: Grayscale or RGB image array.
+        mask: Integer label mask where each nucleus has a unique label.
+        n_examples: Number of nuclei to visualize. Defaults to 4.
+
+    Returns:
+        None. Displays matplotlib figures for each sampled nucleus.
     """
 
     if len(image.shape) == 3:
@@ -267,7 +295,31 @@ def create_barplot(
     height_per_category: float = 0.58,
     base_width         : float = WEB_FIG_WIDTH,
 ) -> "plt.Figure | dict[str, plt.Figure]":
+    """Create horizontal bar plots from a tabular dataset.
 
+    Supports optional hue grouping and faceting by a categorical column.
+    When faceting is requested, one figure is produced per facet value.
+
+    Args:
+        df: Input data frame containing bar plot values and categories.
+        x: Column name for bar lengths. Defaults to "Value".
+        y: Column name for category labels. Defaults to "Category".
+        hue: Optional column name for color grouping.
+        facet: Optional column name to split plots by facet value.
+        suptitle: Optional figure suptitle.
+        xlabel: Optional x-axis label; derived from ``x`` when omitted.
+        ylabel: Optional y-axis label.
+        sort: Whether to sort rows by ``x`` before plotting. Defaults to True.
+        ascending: Sort direction when ``sort`` is True. Defaults to True.
+        bar_label_fmt: Format string for bar value annotations. Defaults to "%.4f".
+        color: Bar color when no hue column is used. Defaults to "#5C6BC0".
+        height_per_category: Figure height scale per category. Defaults to 0.58.
+        base_width: Figure width in inches. Defaults to WEB_FIG_WIDTH.
+
+    Returns:
+        A single figure when ``facet`` is None, otherwise a mapping from facet
+        value string to figure.
+    """
     apply_large_plot_style()
 
     if df is None or len(df) == 0:
@@ -354,6 +406,15 @@ def create_barplot(
 
 
 def _scorecard_metric_bar(ax, values_by_dataset, *, title, ylabel, label_fmt="{:.2f}"):
+    """Draw a labeled bar chart of metric values by dataset on an axes.
+
+    Args:
+        ax: Matplotlib axes on which to draw the bars.
+        values_by_dataset: Mapping from dataset label to numeric metric value.
+        title: Subplot title.
+        ylabel: Y-axis label.
+        label_fmt: Format string for bar annotations. Defaults to "{:.2f}".
+    """
     hue_palette = ["#5470C6", "#EE6666"]
     labels      = list(values_by_dataset.keys())
     values      = [values_by_dataset[k] for k in labels]
@@ -394,6 +455,23 @@ def create_scorecard_figure(
     image_pairs,
     suptitle="ScoreCard Summary",
 ):
+    """Build a multi-panel ScoreCard summary figure.
+
+    The layout includes a dataset summary table, completeness and coverage
+    metrics, constraint violation rates, and paired real/synthetic image
+    previews.
+
+    Args:
+        summary_rows: Iterable of (label, value) pairs for the summary table.
+        completeness: Mapping from dataset label to completeness percentage.
+        coverage: Mapping from dataset label to coverage variance metric.
+        violation_df: Data frame with "Feature" and "Synth_Violation_%" columns.
+        image_pairs: Iterable of (real_path, synthetic_path) image tuples.
+        suptitle: Figure suptitle. Defaults to "ScoreCard Summary".
+
+    Returns:
+        Matplotlib figure containing the full scorecard layout.
+    """
     apply_large_plot_style()
 
     n_images = max(len(image_pairs), 1)
@@ -508,6 +586,20 @@ def create_scorecard_figure(
 
 
 def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlabel=None, ylabel=None):
+    """Render a horizontal seaborn bar plot on the given axes.
+
+    Args:
+        ax: Matplotlib axes to draw on.
+        sub: Data frame subset to plot.
+        x: Column name for bar lengths.
+        y: Column name for category labels.
+        hue: Optional column name for color grouping.
+        color: Bar color when no hue column is used.
+        hue_palette: Color palette used when ``hue`` is provided.
+        bar_label_fmt: Format string for bar value annotations.
+        xlabel: Optional x-axis label.
+        ylabel: Optional y-axis label.
+    """
     plot_kw = dict(
         data      = sub,
         y         = y,

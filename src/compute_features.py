@@ -9,6 +9,17 @@ from   collections            import defaultdict
 from   src.routines           import centroid_dist, boundary_dist
 
 def compute_nucleus_shape_features(mask):
+    """Compute geometric shape descriptors for each nucleus in a segmentation mask.
+
+    Args:
+        mask: Labeled or binary segmentation mask in which each connected region
+            is treated as one nucleus.
+
+    Returns:
+        dict: Feature name to list of per-nucleus values. Keys are
+        ``convexity``, ``roundness``, ``solidity``, ``eccentricity``,
+        ``skeleton_length``, and ``skeleton_complexity``.
+    """
     props = measure.regionprops(mask)
 
     features = {
@@ -36,6 +47,20 @@ def compute_nucleus_shape_features(mask):
     return features
 
 def compute_nucleus_appearance_features(image, mask):
+    """Compute intensity, texture, Gabor, and color features for each nucleus.
+
+    Args:
+        image: Input image array. RGB images are converted to grayscale for
+            texture features; color channel means are computed when RGB input is
+            provided.
+        mask: Segmentation mask labeling nucleus regions. Resized to match
+            ``image`` when shapes differ.
+
+    Returns:
+        dict: Feature name to list of per-nucleus values, including
+        ``mean_intensity``, GLCM texture statistics, Gabor-filter response means,
+        and ``mean_r``, ``mean_g``, and ``mean_b`` for RGB images.
+    """
     if len(image.shape) == 3:
         rgb       = image.astype(np.float32) / 255.0
         gray      = color.rgb2gray(image)
@@ -143,6 +168,19 @@ def compute_nucleus_appearance_features(image, mask):
     return features
 
 def compute_patch_appearance_features(image, switches):
+    """Compute patch-level appearance features controlled by feature switches.
+
+    Args:
+        image: Input image array for the patch. RGB images support color means;
+            grayscale images yield ``np.nan`` for RGB features.
+        switches: Dict of boolean flags selecting which feature groups to compute.
+            Supported keys are ``'mean_intensity'``, ``'glcm'``, and ``'rgb'``.
+
+    Returns:
+        dict: Scalar feature values for the patch, such as ``mean_intensity``,
+        GLCM texture statistics, and ``mean_r``, ``mean_g``, and ``mean_b``.
+        Only keys enabled by ``switches`` are included.
+    """
     features = {}
 
     if len(image.shape) == 3:
@@ -203,6 +241,25 @@ def compute_patch_appearance_features(image, switches):
     return features
 
 def compute_topological_features(mask, k=5, radius=50):
+    """Compute spatial relationship features between nuclei in a segmentation mask.
+
+    Uses centroid distances, boundary distances, k-nearest neighbors, a fixed
+    radius neighborhood, and Voronoi adjacency.
+
+    Args:
+        mask: Labeled segmentation mask in which each connected region is one
+            nucleus.
+        k: Number of nearest neighbors to include in k-NN mean distance features.
+            Defaults to 5.
+        radius: Radius in pixels for neighborhood mean distance features.
+            Defaults to 50.
+
+    Returns:
+        dict: Feature name to list of per-nucleus values, including
+        ``nn_centroid``, ``nn_boundary``, ``knn_centroid_mean``,
+        ``knn_boundary_mean``, ``radius_centroid_mean``, ``radius_boundary_mean``,
+        ``voronoi_centroid_mean``, and ``voronoi_boundary_mean``.
+    """
     props      = measure.regionprops(mask)
     centroids  = np.array([p.centroid for p in props])       
     labels     = np.array([p.label    for p in props])

@@ -38,9 +38,23 @@ def create_image_df(dir='./data/files') -> pd.DataFrame:
 
 
 def generate_random_color():
+    """Generate a random hex color string.
+
+    Returns:
+        str: Color in '#RRGGBB' format.
+    """
     return "#{:06X}".format(random.randint(0, 0xFFFFFF))
 
 def extend_colors(plot_colors, N):
+    """Extend a color list with randomly generated unique colors.
+
+    Args:
+        plot_colors: Existing list of color strings.
+        N: Number of additional unique colors to add.
+
+    Returns:
+        list: Original colors plus N new unique hex color strings.
+    """
     new_colors = set(plot_colors)
     
     while len(new_colors) < len(plot_colors) + N:

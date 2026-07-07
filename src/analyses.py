@@ -14,6 +14,17 @@ from   src.compute_metrics   import (
 )
 
 def hist_analysis(results_dir="./data/features", feature_names=None):
+    """Build overlaid histogram figures comparing real and synthetic patch features.
+
+    Args:
+        results_dir: Directory containing real and synthetic patch feature NPZ files.
+        feature_names: Optional list of feature keys to include. When omitted, all
+            features present in both datasets are used.
+
+    Returns:
+        A tuple ``(fig_hist, None)`` where ``fig_hist`` is the histogram figure
+        produced by ``print_histograms``.
+    """
     from src.visualization import print_histograms
 
     real_features  = load_features(os.path.join(results_dir, 'real_patch_appearance_features.npz'))
@@ -35,6 +46,22 @@ def coverage_analysis(
     feature_names=None,
     metrics_to_compute=None,
 ):
+    """Compute and plot coverage metrics for real vs. synthetic patch features.
+
+    Args:
+        results_dir: Directory containing patch feature NPZ files.
+        real_features: Filename of the real-data feature NPZ within ``results_dir``.
+        synth_features: Filename of the synthetic-data feature NPZ within
+            ``results_dir``.
+        feature_names: Optional subset of feature column names to analyze after
+            variance-based filtering.
+        metrics_to_compute: Optional mapping of metric name to bool; only metrics
+            marked ``True`` are plotted.
+
+    Returns:
+        A dict mapping each coverage metric name to its bar-plot figure. Returns
+        an empty dict when no features remain after filtering.
+    """
     real_features                    = os.path.join(results_dir, real_features)
     synth_features                   = os.path.join(results_dir, synth_features)
 
@@ -100,7 +127,22 @@ def congruence_analysis(
     synth_features='kde_patch_appearance_features.npz',
     feature_names=None,
 ):
+    """Compute congruence metrics between real and synthetic patch feature distributions.
 
+    Args:
+        metrics_to_compute: Mapping of metric identifiers (e.g. ``jsd``, ``emd``,
+            ``cosine``) to booleans indicating which metrics to compute.
+        results_dir: Directory containing patch feature NPZ files.
+        real_features: Filename of the real-data feature NPZ within ``results_dir``.
+        synth_features: Filename of the synthetic-data feature NPZ within
+            ``results_dir``.
+        feature_names: Optional subset of feature column names to analyze after
+            variance-based filtering.
+
+    Returns:
+        A dict mapping each congruence metric name to a bar-plot figure comparing
+        features.
+    """
     real_features        = os.path.join(results_dir, real_features)
     synth_features       = os.path.join(results_dir, synth_features)
 
@@ -172,6 +214,22 @@ def congruence_analysis(
     return figs
 
 def completeness_analysis(real_csv, synth_csv, required_fields=None, label="", metrics_to_include=None):
+    """Measure metadata completeness for real and synthetic CSV datasets.
+
+    Args:
+        real_csv: Path to the real-data metadata CSV.
+        synth_csv: Path to the synthetic-data metadata CSV.
+        required_fields: Column names to treat as required. Defaults to columns
+            shared by both CSVs.
+        label: Prefix applied to internal completeness computation labels.
+        metrics_to_include: Optional mapping of metric name to bool controlling
+            which summary and per-field plots are generated.
+
+    Returns:
+        A tuple ``(comp_df, figs)`` where ``comp_df`` is a summary DataFrame with
+        one row per dataset and ``figs`` is a dict of bar-plot figures keyed by
+        metric name, or ``None`` if plotting fails.
+    """
     real_df  = pd.read_csv(real_csv)
     synth_df = pd.read_csv(synth_csv)
 
@@ -265,6 +323,24 @@ def consistency_analysis(
     label="",
     metrics_to_plot=None,
 ):
+    """Evaluate numeric metadata consistency across demographic subgroups.
+
+    Args:
+        real_csv: Path to the real-data metadata CSV.
+        synth_csv: Path to the synthetic-data metadata CSV.
+        group_by: Categorical column used to partition rows before computing
+            consistency statistics.
+        metric_cols: Numeric column names to analyze for within-group stability.
+        label: Prefix applied to internal consistency computation labels.
+        metrics_to_plot: Optional mapping of consistency metric name to bool;
+            only metrics marked ``True`` are plotted.
+
+    Returns:
+        A tuple ``(cons_df, figs)`` where ``cons_df`` holds per-dataset,
+        per-metric consistency results and ``figs`` is a dict of bar-plot figures
+        keyed by consistency metric name, or ``None`` if plotting fails. Returns
+        ``(empty DataFrame, None)`` when no results are produced.
+    """
     real_df  = pd.read_csv(real_csv)
     synth_df = pd.read_csv(synth_csv)
 
@@ -408,6 +484,34 @@ def scorecard_analysis(
     seed=None,
     path_root=None,
 ):
+    """Build a summary scorecard comparing real and synthetic datasets.
+
+    Aggregates sample counts, metadata completeness, feature-space coverage
+    variance, constraint violations, and paired image previews into a single
+    dashboard figure.
+
+    Args:
+        real_csv: Path to the real-data image or metadata CSV (used for sample
+            counts and image pairing).
+        synth_csv: Path to the synthetic-data image or metadata CSV.
+        metadata_real_csv: Optional separate real metadata CSV for completeness;
+            defaults to ``real_csv``.
+        metadata_synth_csv: Optional separate synthetic metadata CSV for
+            completeness; defaults to ``synth_csv``.
+        results_dir: Directory containing patch feature NPZ files.
+        real_features: Filename of the real-data feature NPZ within ``results_dir``.
+        synth_features: Filename of the synthetic-data feature NPZ within
+            ``results_dir``.
+        features_to_check: Optional subset of patch features for constraint
+            violation analysis.
+        n_images: Maximum number of real/synthetic image pairs to display.
+        seed: Optional random seed for reproducible image-pair sampling.
+        path_root: Optional base directory for resolving relative image paths.
+
+    Returns:
+        A tuple ``(summary_df, fig)`` where ``summary_df`` compares datasets on
+        key metrics and ``fig`` is the composite scorecard figure.
+    """
     from src.visualization import create_scorecard_figure
 
     real_df               = pd.read_csv(real_csv)
@@ -494,12 +598,38 @@ def constraint_patch_analysis(
     synth_features='kde_patch_appearance_features.npz',
     features_to_check=None,
 ):
+    """Run constraint analysis on patch features loaded from NPZ files.
+
+    Args:
+        results_dir: Directory containing patch feature NPZ files.
+        real_features: Filename of the real-data feature NPZ within ``results_dir``.
+        synth_features: Filename of the synthetic-data feature NPZ within
+            ``results_dir``.
+        features_to_check: Optional subset of feature names to evaluate for
+            percentile-bound violations.
+
+    Returns:
+        The result of ``constraint_analysis`` applied to the loaded feature dicts.
+    """
     real_feats = load_features(os.path.join(results_dir, real_features))
     synth_feats = load_features(os.path.join(results_dir, synth_features))
     return constraint_analysis(real_feats, synth_feats, features_to_check=features_to_check)
 
 
 def constraint_analysis(real_features, synth_features, features_to_check=None):
+    """Compute constraint violations and plot synthetic violation rates by feature.
+
+    Args:
+        real_features: Mapping of feature name to real-data value arrays.
+        synth_features: Mapping of feature name to synthetic-data value arrays.
+        features_to_check: Optional subset of feature names to evaluate. When
+            omitted, all shared features are checked.
+
+    Returns:
+        A tuple ``(violation_df, fig)`` where ``violation_df`` reports per-feature
+        violation statistics and ``fig`` is a horizontal bar chart of synthetic
+        violation percentages.
+    """
     from src.visualization import create_barplot
 
     violation_df = compute_constraint(

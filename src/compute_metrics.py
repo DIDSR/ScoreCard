@@ -8,6 +8,22 @@ from   sklearn.metrics        import pairwise_distances
 from   src.routines           import normalize_coverage_features, normalize_congruence_features, random_sampling, get_cosine_similarity, get_earth_movers_distance, get_jensen_shannon_divergence
 
 def compute_coverage(df, label=""):
+    """Compute coverage metrics that quantify spread and diversity of feature values.
+
+    Normalizes input features, then computes variance, entropy, mean distance to
+    the centroid, and convex hull volume (when at least two features are present).
+
+    Args:
+        df: DataFrame of feature values; each row is a sample and each column is a
+            feature.
+        label: Optional label used in warning messages and printed output.
+            Defaults to an empty string.
+
+    Returns:
+        dict: Coverage metrics with keys ``Variance``, ``Entropy``,
+        ``Distance_to_Centroid``, and ``Convex_Hull_Volume``. Values are ``np.nan``
+        when there are fewer than 10 samples or a metric cannot be computed.
+    """
     arr = df.to_numpy()
 
     if len(arr) < 10:
@@ -40,6 +56,25 @@ def compute_coverage(df, label=""):
     return metrics
 
 def compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42):
+    """Compute distributional similarity metrics between two feature sets.
+
+    Optionally subsamples both sets to the same size before computing the
+    requested metrics.
+
+    Args:
+        metrics_to_compute: Dict of flags indicating which metrics to compute.
+            Supported keys are ``'jsd'``, ``'emd'``, and ``'cosine'``.
+        r: Real feature values, array-like.
+        s: Synthetic feature values, array-like.
+        sampling: If True, randomly subsample ``r`` and ``s`` to the same size
+            before comparison. Defaults to True.
+        seed: Random seed used when ``sampling`` is True. Defaults to 42.
+
+    Returns:
+        dict: Requested similarity metrics. May include
+        ``'jensen_shannon_divergence'``, ``'earth_movers_distance'``, and
+        ``'cosine_similarity'`` depending on ``metrics_to_compute``.
+    """
     return_metrics = {}
     r              = normalize_congruence_features(r)
     s              = normalize_congruence_features(s)
@@ -61,6 +96,23 @@ def compute_congruence(metrics_to_compute, r, s, sampling=True, seed=42):
     return return_metrics
 
 def compute_completeness(df, required_fields=None, label=""):
+    """Compute missing-data and required-field completeness metrics.
+
+    Args:
+        df: DataFrame or array-like object containing feature values. For
+            DataFrames, missing values are detected with ``isna()``.
+        required_fields: Column names to evaluate for required-field completeness.
+            If None, all DataFrame columns are used. Ignored for non-DataFrame
+            inputs.
+        label: Optional label used in warning messages and printed output.
+            Defaults to an empty string.
+
+    Returns:
+        dict: Completeness metrics with keys ``Missing_Data_Percentage``,
+        ``Required_Fields_Completeness``, and ``per_field``. ``per_field`` maps
+        each required column to the percentage of non-missing values. Values are
+        ``np.nan`` when the input is empty or a metric cannot be computed.
+    """
     if df is None or len(df) == 0:
         print(f"  Warning: Too few samples for {label}")
         return {k: np.nan for k in ['Missing_Data_Percentage', 'Required_Fields_Completeness']}
@@ -123,10 +175,23 @@ def compute_completeness(df, required_fields=None, label=""):
     return metrics
 
 def compute_consistency(group_data, label=""):
-    """Compute consistency metrics across subgroups: variance of group means,
-    max-min difference of group means, and one-way ANOVA for significance of differences.
-    group_data should be a dict: {group_name: array-like of metric values for that subgroup}
-    Follows style of other compute_* functions.
+    """Compute consistency metrics across subgroups of metric values.
+
+    Compares subgroup means using variance across groups, max-min spread, and a
+    one-way ANOVA test for significant differences.
+
+    Args:
+        group_data: Dict mapping subgroup names to array-like metric values for
+            that subgroup, e.g. ``{group_name: values}``. At least two non-empty
+            groups are required.
+        label: Optional label used in warning messages and printed output.
+            Defaults to an empty string.
+
+    Returns:
+        dict: Consistency metrics with keys ``Variance_of_Group_Means``,
+        ``Max_Min_Difference``, ``ANOVA_F_statistic``, and ``ANOVA_p_value``.
+        Values are ``np.nan`` when there are fewer than two groups, a group is
+        empty, or ANOVA fails.
     """
     if not isinstance(group_data, dict) or len(group_data) < 2:
         print(f"  Warning: Too few groups (<2) for consistency computation in {label}")
@@ -174,7 +239,29 @@ def compute_consistency(group_data, label=""):
     return metrics
 
 def compute_constraint(real_features, synth_features, features_to_check=None, percentile_low=1, percentile_high=99):
+    """Measure how often synthetic feature values violate real-data percentile bounds.
 
+    For each feature, defines lower and upper bounds from the real distribution
+    and reports the percentage of synthetic values that fall outside that range.
+
+    Args:
+        real_features: Dict mapping feature names to real feature value arrays.
+        synth_features: Dict mapping feature names to synthetic feature value
+            arrays.
+        features_to_check: Feature names to evaluate. If None, automatically
+            selects common numeric 1-D features present in both dicts with more
+            than 10 real values.
+        percentile_low: Lower percentile used to define the real-data bound.
+            Defaults to 1.
+        percentile_high: Upper percentile used to define the real-data bound.
+            Defaults to 99.
+
+    Returns:
+        pd.DataFrame: One row per evaluated feature with columns ``Feature``,
+        ``Synth_Violation_%``, ``Lower_Bound``, ``Upper_Bound``, ``n_real``, and
+        ``n_synth``. Rows are sorted by ``Synth_Violation_%`` in descending order.
+        Returns an empty DataFrame when no features qualify.
+    """
     if features_to_check is None:
         common_keys       = set(real_features.keys()) & set(synth_features.keys())
         features_to_check = []

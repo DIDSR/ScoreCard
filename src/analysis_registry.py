@@ -119,6 +119,16 @@ COMPLETENESS_PREFERRED_FIELDS = [
 
 
 def _load_patch_feature_names(features_dir=FEATURES_DIR):
+    """Load sorted patch feature names shared by real and synthetic NPZ files.
+
+    Args:
+        features_dir: Directory containing real and synthetic patch feature NPZ
+            files.
+
+    Returns:
+        A sorted list of feature names present in both NPZ files when both exist;
+        otherwise names from whichever file is available.
+    """
     real_path = os.path.join(features_dir, REAL_NPZ)
     synth_path = os.path.join(features_dir, SYNTH_NPZ)
     names = []
@@ -139,6 +149,18 @@ def _load_patch_feature_names(features_dir=FEATURES_DIR):
 
 
 def _metadata_columns(real_csv, synth_csv, patch_features=None):
+    """Identify shared metadata columns excluding patch and identifier fields.
+
+    Args:
+        real_csv: Path to the real-data CSV used to infer column names.
+        synth_csv: Path to the synthetic-data CSV used to infer column names.
+        patch_features: Optional list of patch feature column names to exclude
+            from the metadata column set.
+
+    Returns:
+        A sorted list of column names present in both CSVs, excluding skip columns
+        and any patch feature names.
+    """
     real_df = pd.read_csv(real_csv, nrows=500)
     synth_df = pd.read_csv(synth_csv, nrows=500)
     real_df.columns = real_df.columns.str.strip()
@@ -153,6 +175,17 @@ def _metadata_columns(real_csv, synth_csv, patch_features=None):
 
 
 def _categorical_columns(real_csv, synth_csv, metadata_columns):
+    """Detect low-cardinality categorical columns suitable for grouping.
+
+    Args:
+        real_csv: Path to the real-data CSV.
+        synth_csv: Path to the synthetic-data CSV.
+        metadata_columns: Candidate metadata column names to evaluate.
+
+    Returns:
+        A list of column names with between 2 and 25 unique non-null values across
+        both datasets, ordered with preferred demographic columns first.
+    """
     real_df = pd.read_csv(real_csv, usecols=lambda c: c in metadata_columns, nrows=1000)
     synth_df = pd.read_csv(synth_csv, usecols=lambda c: c in metadata_columns, nrows=1000)
     cats = []
@@ -174,6 +207,17 @@ def _categorical_columns(real_csv, synth_csv, metadata_columns):
 
 
 def _numeric_columns(real_csv, synth_csv, metadata_columns):
+    """Collect numeric metadata columns present in both CSVs.
+
+    Args:
+        real_csv: Path to the real-data CSV.
+        synth_csv: Path to the synthetic-data CSV.
+        metadata_columns: Candidate metadata column names to evaluate.
+
+    Returns:
+        A list of numeric column names, with default consistency fields listed
+        first followed by any additional numeric columns.
+    """
     real_df = pd.read_csv(real_csv, nrows=500)
     synth_df = pd.read_csv(synth_csv, nrows=500)
     nums = []
@@ -196,6 +240,22 @@ def discover_schema(
     metadata_real_csv=None,
     metadata_synth_csv=None,
 ):
+    """Discover available patch features and metadata schema from input files.
+
+    Args:
+        real_csv: Path to the real-data CSV (image list or metadata).
+        synth_csv: Path to the synthetic-data CSV.
+        features_dir: Directory containing patch feature NPZ files.
+        metadata_real_csv: Optional separate real metadata CSV; defaults to
+            ``real_csv``.
+        metadata_synth_csv: Optional separate synthetic metadata CSV; defaults to
+            ``synth_csv``.
+
+    Returns:
+        A dict with keys ``patch_features``, ``metadata_columns``,
+        ``categorical_columns``, ``numeric_columns``, resolved metadata CSV paths,
+        and ``warnings`` describing schema issues.
+    """
     patch_features = _load_patch_feature_names(features_dir)
 
     meta_real = metadata_real_csv or real_csv
@@ -248,6 +308,16 @@ def discover_schema(
 
 
 def default_config(schema):
+    """Build a default analysis configuration from a discovered schema.
+
+    Args:
+        schema: Schema dict returned by ``discover_schema``, containing patch
+            features, metadata columns, and column type lists.
+
+    Returns:
+        A nested dict keyed by analysis id, with enabled flags, selected metrics,
+        features or fields, and consistency group-by defaults.
+    """
     patch = schema.get("patch_features") or []
     metadata = schema.get("metadata_columns") or []
     numeric = schema.get("numeric_columns") or []
@@ -311,14 +381,37 @@ def default_config(schema):
 
 
 def enabled_flags(analysis_config):
+    """Extract enabled/disabled state for each registered analysis.
+
+    Args:
+        analysis_config: Full analysis configuration dict keyed by analysis id.
+
+    Returns:
+        A dict mapping each analysis id to its ``enabled`` boolean value.
+    """
     return {aid: analysis_config.get(aid, {}).get("enabled", False) for aid in _analysis_ids()}
 
 
 def _analysis_ids():
+    """Return the ordered list of registered analysis identifiers.
+
+    Returns:
+        A list of analysis id strings defined in ``ANALYSIS_REGISTRY``.
+    """
     return [entry["id"] for entry in ANALYSIS_REGISTRY]
 
 
 def validate_config(config, schema):
+    """Validate an analysis configuration against schema and registry rules.
+
+    Args:
+        config: Analysis configuration dict keyed by analysis id.
+        schema: Schema dict returned by ``discover_schema``.
+
+    Returns:
+        A tuple ``(validated, errors)`` where ``validated`` is a deep copy of
+        ``config`` and ``errors`` is a list of human-readable validation messages.
+    """
     errors = []
     validated = deepcopy(config)
 
@@ -388,6 +481,17 @@ def parse_config_from_form(form, schema, existing_config=None):
 
 
 def feature_options_for_analysis(analysis_id, schema):
+    """Return selectable feature or field names for a given analysis type.
+
+    Args:
+        analysis_id: Identifier of the analysis (e.g. ``congruence``,
+            ``completeness``).
+        schema: Schema dict returned by ``discover_schema``.
+
+    Returns:
+        A list of column or feature names appropriate for the analysis data source;
+        empty when ``analysis_id`` is not registered.
+    """
     entry = next((e for e in ANALYSIS_REGISTRY if e["id"] == analysis_id), None)
     if not entry:
         return []
