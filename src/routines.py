@@ -85,7 +85,7 @@ def combine_features(features_list):
     combined_dict   = {k: v[:current_min_len] for k, v in combined_dict.items()}
     combined_pd     = pd.DataFrame(combined_dict)
 
-    for sub_feature_path in range(1, len(features_list)):
+    for sub_feature_path in features_list[1:]:
         sub_dict        = load_features(sub_feature_path)
         min_len         = min(min(len(v) for v in sub_dict.values()),
                               min(len(v) for v in combined_dict.values()))

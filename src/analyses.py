@@ -48,7 +48,7 @@ def coverage_analysis(
     synth_df                         = combine_features(synth_features_list)
 
     real_df, synth_df, kept_features = filter_features(real_df, synth_df, 0.5)
-    cols = [c for c in kept_features if c not in real_features]
+    cols = kept_features
 
     if feature_names:
         cols = [c for c in cols if c in feature_names]
@@ -113,8 +113,10 @@ def congruence_analysis(
     real_df              = combine_features(real_features_list)
     synth_df             = combine_features(synth_features_list)
 
+    real_df, synth_df, kept_features = filter_features(real_df, synth_df, 0.5)
+
     congruence_results = {}
-    cols = real_df.columns.tolist()
+    cols = kept_features
     if feature_names:
         cols = [c for c in cols if c in feature_names]
 
