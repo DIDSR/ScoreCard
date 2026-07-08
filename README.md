@@ -8,7 +8,7 @@
 
 ## Overview
 
-**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **synthetic data evaluation approach** for assessing the quality of Synthetic Medical Data as described in [Zamzmi et al. (2025)].
+**`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **synthetic data evaluation approach** for assessing the quality of Synthetic Medical Data based on 7C's approach as described in [Zamzmi et al. (2025)].
 
 Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
 
