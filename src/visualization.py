@@ -405,6 +405,145 @@ def create_barplot(
     return fig
 
 
+def create_constraint_range_plot(
+    violation_df: pd.DataFrame,
+    *,
+    suptitle           : str   = "Constraint",
+    band_color         : str   = "#5470C6",
+    in_range_color     : str   = "#5470C6",
+    violation_color    : str   = "#EE6666",
+    height_per_category: float = 0.62,
+    base_width         : float = 14.0,
+) -> "plt.Figure":
+    """Plot per-feature synthetic spread against the real-data allowed range.
+
+    Each feature's real allowed band ``[Lower_Bound, Upper_Bound]`` is normalized
+    to a uniform ``[0, 1]`` box so features on different scales are comparable.
+    The synthetic 1st-99th percentile spread (with a median marker) is drawn in the
+    same normalized space; any part of that spread falling outside ``[0, 1]``
+    (i.e. outside the real bounds) is drawn in the violation color. The per-feature
+    violation percentage is annotated at the right.
+
+    Args:
+        violation_df: Data frame from ``compute_constraint`` with columns
+            ``Feature``, ``Synth_Violation_%``, ``Lower_Bound``, ``Upper_Bound``,
+            ``Synth_p1``, ``Synth_p50``, and ``Synth_p99``.
+        suptitle: Figure suptitle.
+        band_color: Color of the real allowed-range box.
+        in_range_color: Color of synthetic spread inside the bounds.
+        violation_color: Color of synthetic spread outside the bounds and of the
+            violation-rate annotations.
+        height_per_category: Figure height scale per feature.
+        base_width: Figure width in inches.
+
+    Returns:
+        Matplotlib figure containing the constraint range plot.
+    """
+    apply_large_plot_style()
+
+    if violation_df is None or len(violation_df) == 0:
+        fig, ax = plt.subplots(figsize=(12, 5), dpi=PLOT_DPI)
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=18)
+        ax.axis("off")
+
+        return fig
+
+    df       = violation_df.sort_values("Synth_Violation_%", ascending=True).reset_index(drop=True)
+    features = df["Feature"].str.replace("_", " ")
+    n_cats   = len(df)
+
+    h        = max(3.8, height_per_category * n_cats + 2.0)
+    fig, ax  = plt.subplots(figsize=(base_width, h), dpi=PLOT_DPI)
+
+    def _norm(value, lower, upper):
+        """Map a raw value into the real band's normalized [0, 1] coordinates."""
+        span = upper - lower
+        if span == 0:
+            return 0.0
+        return (value - lower) / span
+
+    for y, (_, row) in enumerate(df.iterrows()):
+        lower, upper = row["Lower_Bound"], row["Upper_Bound"]
+
+        p1  = _norm(row["Synth_p1"],  lower, upper)
+        p50 = _norm(row["Synth_p50"], lower, upper)
+        p99 = _norm(row["Synth_p99"], lower, upper)
+
+        ax.barh(
+            y,
+            width     = 1.0,
+            left      = 0.0,
+            height    = 0.5,
+            color     = band_color,
+            alpha     = 0.18,
+            edgecolor = band_color,
+            linewidth = 1.2,
+            zorder    = 1,
+        )
+
+        in_lo, in_hi = max(p1, 0.0), min(p99, 1.0)
+        if in_hi > in_lo:
+            ax.plot([in_lo, in_hi], [y, y], color=in_range_color, linewidth=4, solid_capstyle="round", zorder=3)
+
+        if p1 < 0.0:
+            ax.plot([p1, min(p99, 0.0)], [y, y], color=violation_color, linewidth=4, solid_capstyle="round", zorder=3)
+        if p99 > 1.0:
+            ax.plot([max(p1, 1.0), p99], [y, y], color=violation_color, linewidth=4, solid_capstyle="round", zorder=3)
+
+        median_color = in_range_color if 0.0 <= p50 <= 1.0 else violation_color
+        ax.scatter([p50], [y], color=median_color, s=70, zorder=4, edgecolor="black", linewidth=0.6)
+
+        viol = row["Synth_Violation_%"]
+        ax.annotate(
+            f"{viol:.1f}%",
+            xy         = (1.0, y),
+            xycoords   = ax.get_yaxis_transform(),
+            xytext     = (10, 0),
+            textcoords = "offset points",
+            va         = "center",
+            ha         = "left",
+            fontsize   = 12,
+            fontweight = "bold",
+            color      = violation_color if viol > 0 else "#555555",
+            annotation_clip = False,
+        )
+
+    ax.axvline(0.0, color="#333333", linestyle="--", linewidth=1.2, alpha=0.7, zorder=2)
+    ax.axvline(1.0, color="#333333", linestyle="--", linewidth=1.2, alpha=0.7, zorder=2)
+
+    ax.set_yticks(range(n_cats))
+    ax.set_yticklabels(features, fontsize=13)
+    ax.set_ylim(-0.6, n_cats - 0.4)
+
+    ax.set_xticks([0.0, 1.0])
+    ax.set_xticklabels(["Lower\nbound", "Upper\nbound"], fontsize=12)
+    ax.set_xlabel("Feature value (normalized to real 1st-99th percentile range)", fontsize=15, labelpad=10)
+    ax.margins(x=0.12)
+    ax.grid(True, axis="x", alpha=0.20)
+
+    legend_handles = [
+        plt.Line2D([0], [0], color=band_color, linewidth=8, alpha=0.35, label="Real allowed range"),
+        plt.Line2D([0], [0], color=in_range_color, linewidth=4, label="Synthetic spread (within bounds)"),
+        plt.Line2D([0], [0], color=violation_color, linewidth=4, label="Synthetic spread (violation)"),
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=in_range_color,
+                   markeredgecolor="black", markersize=9, label="Synthetic median", linestyle="None"),
+    ]
+
+    fig.suptitle(suptitle, fontsize=WEB_SUPTITLE_SIZE, fontweight="bold", y=0.98)
+
+    fig.tight_layout(rect=[0, 0.06, 0.95, 0.93], pad=1.4)
+    fig.legend(
+        handles        = legend_handles,
+        loc            = "lower center",
+        ncol           = 4,
+        fontsize       = 11,
+        frameon        = False,
+        bbox_to_anchor = (0.5, 0.0),
+    )
+
+    return fig
+
+
 def _scorecard_metric_bar(ax, values_by_dataset, *, title, ylabel, label_fmt="{:.2f}"):
     """Draw a labeled bar chart of metric values by dataset on an axes.
 
@@ -507,9 +646,11 @@ def create_scorecard_figure(
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor("#cbd5e1")
         cell.set_linewidth(0.8)
+        
         if col == 1:
             cell.get_text().set_ha("right")
             cell.get_text().set_fontweight("bold")
+
         if row % 2 == 0:
             cell.set_facecolor("#f8fafc")
 

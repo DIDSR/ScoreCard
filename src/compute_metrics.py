@@ -258,9 +258,12 @@ def compute_constraint(real_features, synth_features, features_to_check=None, pe
 
     Returns:
         pd.DataFrame: One row per evaluated feature with columns ``Feature``,
-        ``Synth_Violation_%``, ``Lower_Bound``, ``Upper_Bound``, ``n_real``, and
-        ``n_synth``. Rows are sorted by ``Synth_Violation_%`` in descending order.
-        Returns an empty DataFrame when no features qualify.
+        ``Synth_Violation_%``, ``Lower_Bound``, ``Upper_Bound``, ``Synth_p1``,
+        ``Synth_p50``, ``Synth_p99``, ``n_real``, and ``n_synth``. The ``Synth_p*``
+        columns are the 1st/50th/99th percentiles of the synthetic values, used to
+        show synthetic spread relative to the real bounds. Rows are sorted by
+        ``Synth_Violation_%`` in descending order. Returns an empty DataFrame when
+        no features qualify.
     """
     if features_to_check is None:
         common_keys       = set(real_features.keys()) & set(synth_features.keys())
@@ -293,12 +296,17 @@ def compute_constraint(real_features, synth_features, features_to_check=None, pe
         lower      = np.nanpercentile(real_clean, percentile_low)
         upper      = np.nanpercentile(real_clean, percentile_high)
         synth_viol = np.mean((synth_clean < lower) | (synth_clean > upper)) * 100
-        
+
+        synth_p1, synth_p50, synth_p99 = np.nanpercentile(synth_clean, [1, 50, 99])
+
         results.append({
             'Feature'          : feat,
             'Synth_Violation_%': round(synth_viol, 2),
             'Lower_Bound'      : round(lower, 4),
             'Upper_Bound'      : round(upper, 4),
+            'Synth_p1'         : round(synth_p1, 4),
+            'Synth_p50'        : round(synth_p50, 4),
+            'Synth_p99'        : round(synth_p99, 4),
             'n_real'           : len(real_clean),
             'n_synth'          : len(synth_clean)
         })

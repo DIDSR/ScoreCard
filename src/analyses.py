@@ -627,10 +627,10 @@ def constraint_analysis(real_features, synth_features, features_to_check=None):
 
     Returns:
         A tuple ``(violation_df, fig)`` where ``violation_df`` reports per-feature
-        violation statistics and ``fig`` is a horizontal bar chart of synthetic
-        violation percentages.
+        violation statistics and ``fig`` is a range plot showing each feature's
+        synthetic spread against its real-data allowed range.
     """
-    from src.visualization import create_barplot
+    from src.visualization import create_constraint_range_plot
 
     violation_df = compute_constraint(
         real_features,
@@ -638,17 +638,8 @@ def constraint_analysis(real_features, synth_features, features_to_check=None):
         features_to_check = features_to_check,
     )
 
-    fig = create_barplot(
+    fig = create_constraint_range_plot(
         violation_df if violation_df is not None else pd.DataFrame(),
-        x="Synth_Violation_%",
-        y="Feature",
-        suptitle="Constraint Violation Rate in Synthetic Data",
-        xlabel="Violation Rate (%)",
-        bar_label_fmt="%.1f",
-        color="#EE6666",
-        sort=False,
-        height_per_category=0.55,
-        base_width=14.0,
     )
 
     return violation_df, fig
