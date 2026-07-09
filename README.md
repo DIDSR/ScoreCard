@@ -24,17 +24,19 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 1. [**Congruence**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/01_Congruence.ipynb) — Measures the degree to which the distribution of synthetic data aligns with the distribution of real patient data (e.g., using Fréchet Inception Distance, Cosine Similarity, Jensen-Shannon Divergence).
 
-2. [**Coverage**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, range, and novelty inherent in patient data (e.g., using Convex Hull Volume, Recall, Vendi Score, Entropy).
+2. [**Coverage**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, and range inherent in patient data (e.g., using Convex Hull Volume, Variance, Distance to Centroid).
 
-3. [**Completeness**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage).
+3. [**Completeness**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/03_Completeness.ipynb) — Evaluates whether the generated data contains all necessary details relevant to the intended task (e.g., using Proportion of Required Fields, Missing Data Percentage compared to a reference dictionary).
 
-4. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
+4. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD Completeness across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
 
-5. [**Constraint**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/05_Constraint.ipynb) — Assesses adherence to known anatomical, biological, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
+5. [**Constraint**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/05_Constraint.ipynb) — Assesses adherence to known anatomical, biological, geometric, or user-defined constraints (e.g., using Constraint Violation Rate to measure how often synthetic features fall outside of ranges defined by corresponding real features).
 
-6. [**Comprehension**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/06_Comprehension.ipynb) — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
+6. [**Comprehension**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/06_Comprehension.ipynb) — Checklist to evaluate the transparency and clarity of the data generation process as well as the quality of the accompanying documentation.
+   
+7. [**Compliance**] — Synthetic dataset provider must ensure compliance of their datasets.
 
-7. [**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
+   [**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
 
 ---
 
