@@ -22,7 +22,7 @@ For more information, and technical questions please contact: **[Seyed.Kahaki@fd
 
 The SMD ScoreCard evaluates synthetic medical data across the following seven dimensions:
 
-1. [**Congruence**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/01_Congruence.ipynb) — Measures the degree to which the distribution of synthetic data aligns with the distribution of real patient data (e.g., using Fréchet Inception Distance, Cosine Similarity, Jensen-Shannon Divergence).
+1. [**Congruence**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/01_Congruence.ipynb) — Measures the degree to which the distribution of synthetic data aligns with the distribution of real patient data (e.g., using Earth Mover's Distance, Cosine Similarity, Jensen-Shannon Divergence).
 
 2. [**Coverage**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/02_Coverage.ipynb) — Evaluates the extent to which SMD captures the variability, and range inherent in patient data (e.g., using Convex Hull Volume, Variance, Distance to Centroid).
 
