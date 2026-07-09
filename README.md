@@ -30,7 +30,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 4. [**Consistency**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/04_Consistency.ipynb) — Assesses the stability of SMD quality metrics across demographic subgroups, disease classes, or over time (e.g., using Variance, ANOVA, Maximum-Minimum Difference).
 
-5. [**Constraint**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/05_Constraint.ipynb) — Assesses adherence to known anatomical, biological, clinical, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
+5. [**Constraint**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/05_Constraint.ipynb) — Assesses adherence to known anatomical, biological, geometric, or user-defined constraints (e.g., using Constraint Violation Rate, Distance to Constraint Boundary).
 
 6. [**Comprehension**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/06_Comprehension.ipynb) — Evaluates the transparency and clarity of the data generation process and accompanying documentation (e.g., using Documentation Clarity Score).
 
