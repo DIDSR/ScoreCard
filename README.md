@@ -10,7 +10,7 @@
 
 **`Synthetic Data ScoreCard`** is an open-source Python toolbox that implements the **synthetic data evaluation approach** for assessing the quality of Synthetic Medical Data based on 7C's approach as described in [Zamzmi et al. (2025)].
 
-Synthetic medical data holds significant promise for advancing AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data can introduce biases, violate clinical constraints, and ultimately compromise the safety and effectiveness of AI models trained or tested on such data.
+Synthetic medical data offers potential advantages for AI development in healthcare — particularly for addressing data scarcity, privacy constraints, and underrepresentation of rare diseases and populations. However, the quality of synthetic data is critical: poor-quality synthetic data may introduce biases, violate clinical constraints, and potentially affect the performance of AI models trained or evaluated on such data.
 
 This toolbox provides a **quantitative and reproducible** approach to evaluating Synthetic Medical Data across seven relevant criteria, and supports the generation of a structured **Scorecard** to accompany synthetic datasets.
 
@@ -34,8 +34,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
 
 6. [**Comprehension**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/06_Comprehension.ipynb) — Checklist to evaluate the transparency and clarity of the data generation process as well as the quality of the accompanying documentation.
    
-7. [**Compliance**] — Synthetic dataset provider must ensure compliance of their datasets.
-
+7. [**Compliance**] — Synthetic dataset providers are encouraged to ensure compliance of their datasets with applicable regulations and institutional policies. Note: Compliance is not evaluated quantitatively by this toolbox. Dataset providers are responsible for ensuring compliance with applicable regulations.
    [**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
 
 ---
