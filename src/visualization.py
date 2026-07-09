@@ -703,11 +703,6 @@ def create_scorecard_figure(
             img = plt.imread(path)
             ax.imshow(img, cmap="gray" if img.ndim == 2 else None)
 
-            stem = os.path.splitext(os.path.basename(str(path)))[0]
-            if len(stem) > 26:
-                stem = stem[:24] + "…"
-            ax.set_title(stem, fontsize=9)
-
             ax.set_xticks([])
             ax.set_yticks([])
             for spine in ax.spines.values():
