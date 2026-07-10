@@ -36,7 +36,7 @@ The SMD ScoreCard evaluates synthetic medical data across the following seven di
    
 7. [**Compliance**] — Synthetic dataset providers are encouraged to ensure compliance of their datasets with applicable regulations and institutional policies. Note: Compliance is not evaluated quantitatively by this toolbox. Dataset providers are responsible for ensuring compliance with applicable regulations.
 
-   [**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
+[**ScoreCard**](https://github.com/DIDSR/ScoreCard/blob/main/notebooks/07_ScoreCard.ipynb) — Agglomeration of all results into one notebook dashboard. Run after running previous notebooks.
 
 ---
 
