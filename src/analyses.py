@@ -6,12 +6,13 @@ import numpy                 as     np
 from   src.feature_io        import load_features
 from   src.routines          import combine_features, filter_features
 from   src.compute_metrics   import (
-    compute_congruence, 
-    compute_coverage,
-    compute_completeness,
-    compute_consistency,
-    compute_constraint,
-)
+                                        compute_congruence, 
+                                        compute_coverage,
+                                        compute_completeness,
+                                        compute_consistency,
+                                        compute_constraint,
+                                    )
+from   src.embeddings        import prepare_feature_matrices, compute_embeddings
 
 def hist_analysis(results_dir="./data/features", feature_names=None):
     """Build overlaid histogram figures comparing real and synthetic patch features.
@@ -212,6 +213,100 @@ def congruence_analysis(
         )
 
     return figs
+
+
+def embedding_analysis(
+    methods=None,
+    results_dir='./data/features',
+    real_features='real_nucleus_appearance_features.npz',
+    synth_features='kde_synth_nucleus_appearance_features.npz',
+    feature_names=None,
+    *,
+    balance=False,
+    max_samples=5000,
+    seed=42,
+):
+    """Produce exploratory PCA / t-SNE / UMAP plots for real vs synthetic features.
+
+    Defaults to nucleus appearance NPZs. Intended for the embeddings notebook
+    (``09_Embeddings.ipynb``):
+
+    Args:
+        methods: Mapping of embedding method name to bool. Supported keys are
+            ``pca``, ``pca_1d``, ``tsne``, and ``umap``. Defaults to all enabled.
+            ``pca_1d`` is a density plot of the first principal component.
+        results_dir: Directory containing feature NPZ files.
+        real_features: Filename of the real-data feature NPZ within ``results_dir``.
+            Defaults to ``real_nucleus_appearance_features.npz``.
+        synth_features: Filename of the synthetic-data feature NPZ within
+            ``results_dir``. Defaults to
+            ``kde_synth_nucleus_appearance_features.npz``.
+        feature_names: Optional subset of feature column names after filtering.
+        balance: If True, subsample real and synthetic to the same count before
+            embedding.
+        max_samples: Per-class sample cap before embedding (default 5000). Keeps
+            t-SNE / UMAP tractable on large nucleus sets (~10k–90k). Pass
+            ``None`` to use all finite samples.
+        seed: Random seed for balancing and stochastic embeddings.
+
+    Returns:
+        A dict mapping embedding method names to matplotlib figures. Empty when
+        no features remain or all methods fail.
+    """
+    if methods is None:
+        methods = {"pca": True, "pca_1d": True, "tsne": True, "umap": True}
+
+    real_path  = os.path.join(results_dir, real_features)
+    synth_path = os.path.join(results_dir, synth_features)
+
+    real_df    = combine_features([real_path])
+    synth_df   = combine_features([synth_path])
+
+    real_df, synth_df, kept_features = filter_features(real_df, synth_df, 0.5)
+    cols                             = kept_features
+
+    if feature_names:
+        cols = [c for c in cols if c in feature_names]
+
+    if not cols:
+        print("  Warning: no features left for embedding analysis.")
+        return {}
+
+    X_real, X_synth, cols = prepare_feature_matrices(
+        real_df[cols],
+        synth_df[cols],
+        feature_names=cols,
+        balance=balance,
+        max_samples=max_samples,
+        seed=seed,
+    )
+
+    if X_real.size == 0 or X_synth.size == 0:
+        print("  Warning: empty matrices after cleaning; skipping embeddings.")
+        return {}
+
+    print(f"Embedding analysis on {len(cols)} features "
+          f"(real n={len(X_real)}, synth n={len(X_synth)}; "
+          f"max_samples={max_samples})")
+
+    embeddings = compute_embeddings(X_real, X_synth, methods=methods, random_state=seed)
+
+    from src.visualization import plot_embedding_1d, plot_embedding_scatter
+
+    figs = {}
+
+    for name, emb in embeddings.items():
+        real  = emb.get("real")
+        is_1d = (
+            emb.get("method") == "pca_1d"
+            or name == "pca_1d"
+            or (real is not None and getattr(real, "ndim", 0) == 2 and real.shape[1] == 1)
+        )
+        
+        figs[name] = plot_embedding_1d(emb) if is_1d else plot_embedding_scatter(emb)
+
+    return figs
+
 
 def completeness_analysis(real_csv, synth_csv, required_fields=None, label="", metrics_to_include=None):
     """Measure metadata completeness for real and synthetic CSV datasets.
@@ -530,8 +625,8 @@ def scorecard_analysis(
         set(meta_real_df.columns).intersection(set(meta_synth_df.columns))
     )
 
-    real_comp  = compute_completeness(meta_real_df,  required_fields=required_fields, label="scorecard_real")
-    synth_comp = compute_completeness(meta_synth_df, required_fields=required_fields, label="scorecard_synth")
+    real_comp    = compute_completeness(meta_real_df,  required_fields=required_fields, label="scorecard_real")
+    synth_comp   = compute_completeness(meta_synth_df, required_fields=required_fields, label="scorecard_synth")
 
     completeness = {
         'Real' : real_comp.get('Required_Fields_Completeness'),

@@ -2,8 +2,13 @@
 Notes.md
 model_checkpoints/best_model.pth
 data/kde_synth_images/
+data/kde_synth_masks/
 data/static_synth_images/
+data/static_synth_masks/
 data/real_images/
+data/real_masks/
+data/features/test*
+notebooks/data*
 flask_files/static/outputs/
 flask_files/static/uploads/
 

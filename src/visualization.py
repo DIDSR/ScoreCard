@@ -748,6 +748,7 @@ def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlab
     if hue and hue in sub.columns:
         plot_kw["hue"]     = hue
         plot_kw["palette"] = hue_palette
+
     else:
         plot_kw["color"]   = color
 
@@ -758,6 +759,7 @@ def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlab
         fontsize = 16, 
         labelpad = 8
     )
+
     ax.set_ylabel(ylabel or "", fontsize=16, labelpad=6)
 
     ax.tick_params(axis="y", labelsize=13)
@@ -768,3 +770,215 @@ def _plot_bars_on_ax(ax, sub, x, y, hue, color, hue_palette, bar_label_fmt, xlab
         ax.bar_label(container, fmt=bar_label_fmt, padding=4, fontsize=11)
 
     ax.margins(x=0.1)
+
+
+def plot_embedding_1d(
+    embedding  : dict,
+    *,
+    real_color : str = "#9999CC",
+    synth_color: str = "#FF9966",
+    bins       : int = 40,
+) -> "plt.Figure":
+    """Density histogram of a 1D real vs. synthetic embedding (e.g. PC1).
+
+    Args:
+        embedding: Dict from ``src.embeddings`` compute_* helpers with keys
+            ``real``, ``synth``, ``axis_labels``, ``title``, and optional ``note``.
+            ``real`` / ``synth`` should be shape ``(n, 1)`` or ``(n,)``.
+        real_color: Histogram / KDE color for real samples.
+        synth_color: Histogram / KDE color for synthetic samples.
+        bins: Number of shared histogram bins.
+
+    Returns:
+        Matplotlib figure with overlaid density histograms and KDE curves.
+    """
+    apply_large_plot_style()
+
+    real        = np.asarray(embedding["real"], dtype=float).ravel()
+    synth       = np.asarray(embedding["synth"], dtype=float).ravel()
+    axis_labels = embedding.get("axis_labels") or ["PC1"]
+    title       = embedding.get("title") or "1D Embedding"
+    note        = embedding.get("note") or ""
+
+    real_clean  = real[np.isfinite(real)]
+    synth_clean = synth[np.isfinite(synth)]
+
+    fig, ax     = plt.subplots(figsize=(WEB_FIG_WIDTH, 7.5), dpi=PLOT_DPI)
+
+    if real_clean.size == 0 and synth_clean.size == 0:
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=18)
+        ax.axis("off")
+        return fig
+
+    stacks = [a for a in (real_clean, synth_clean) if a.size]
+    x_min  = float(np.min([a.min() for a in stacks]))
+    x_max  = float(np.max([a.max() for a in stacks]))
+
+    if x_min == x_max:
+        x_min -= 0.5
+        x_max += 0.5
+
+    shared_range = (x_min, x_max)
+
+    if real_clean.size:
+        ax.hist(
+            real_clean,
+            bins=bins,
+            alpha=0.55,
+            color=real_color,
+            label=f"Real (n={len(real_clean)})",
+            density=True,
+            range=shared_range,
+            edgecolor="black",
+            linewidth=0.6,
+        )
+
+    if synth_clean.size:
+        ax.hist(
+            synth_clean,
+            bins=bins,
+            alpha=0.55,
+            color=synth_color,
+            label=f"Synthetic (n={len(synth_clean)})",
+            density=True,
+            range=shared_range,
+            edgecolor="black",
+            linewidth=0.6,
+        )
+
+    x_vals = np.linspace(x_min, x_max, 400)
+
+    if real_clean.size > 1 and len(np.unique(real_clean)) > 1:
+        ax.plot(
+            x_vals,
+            gaussian_kde(real_clean)(x_vals),
+            color=real_color,
+            linewidth=3,
+        )
+        ax.axvline(np.mean(real_clean), color=real_color, linestyle="--", linewidth=2.5, alpha=0.85)
+
+    if synth_clean.size > 1 and len(np.unique(synth_clean)) > 1:
+        ax.plot(
+            x_vals,
+            gaussian_kde(synth_clean)(x_vals),
+            color=synth_color,
+            linewidth=3,
+        )
+        ax.axvline(np.mean(synth_clean), color=synth_color, linestyle="--", linewidth=2.5, alpha=0.85)
+
+    ax.set_xlabel(axis_labels[0] if len(axis_labels) > 0 else "PC1", fontsize=17, labelpad=10)
+    ax.set_ylabel("Density", fontsize=17, labelpad=10)
+    ax.set_xlim(shared_range)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", fontsize=13, frameon=True)
+    ax.set_title(title, fontsize=20, fontweight="bold", pad=12)
+
+    if note:
+        fig.text(0.5, 0.01, note, ha="center", va="bottom", fontsize=12, style="italic", color="#444444")
+
+    _finalize_figure(fig, top=0.90)
+
+    return fig
+
+
+def plot_embedding_scatter(
+    embedding    : dict,
+    *,
+    real_color   : str   = "#9999CC",
+    synth_color  : str   = "#FF9966",
+    alpha        : float = 0.65,
+    s            : float = 55,
+    show_contours: bool  = False,
+) -> "plt.Figure":
+    """Scatter-plot a 2D real vs. synthetic embedding result.
+
+    Args:
+        embedding: Dict from ``src.embeddings`` compute_* helpers with keys
+            ``real``, ``synth``, ``axis_labels``, ``title``, and optional ``note``.
+        real_color: Marker color for real samples.
+        synth_color: Marker color for synthetic samples.
+        alpha: Point transparency.
+        s: Marker size.
+        show_contours: If True and each cloud has enough points, overlay 2D KDE
+            contours for each source.
+
+    Returns:
+        Matplotlib figure with a single scatter axes. For 1-component embeddings,
+        delegates to ``plot_embedding_1d``.
+    """
+    real = np.asarray(embedding["real"], dtype=float)
+
+    if real.ndim == 1 or (real.ndim == 2 and real.shape[1] == 1):
+        return plot_embedding_1d(
+            embedding, real_color=real_color, synth_color=synth_color
+        )
+
+    apply_large_plot_style()
+
+    synth       = np.asarray(embedding["synth"], dtype=float)
+    axis_labels = embedding.get("axis_labels") or ["Dim 1", "Dim 2"]
+    title       = embedding.get("title") or str(embedding.get("method", "Embedding")).upper()
+    note        = embedding.get("note") or ""
+
+    fig, ax     = plt.subplots(figsize=(WEB_FIG_WIDTH, 9.0), dpi=PLOT_DPI)
+
+    if real.size:
+        ax.scatter(
+            real[:, 0],
+            real[:, 1],
+            c=real_color,
+            alpha=alpha,
+            s=s,
+            edgecolors="black",
+            linewidths=0.35,
+            label=f"Real (n={len(real)})",
+            zorder=3,
+        )
+
+    if synth.size:
+        ax.scatter(
+            synth[:, 0],
+            synth[:, 1],
+            c=synth_color,
+            alpha=alpha,
+            s=s,
+            edgecolors="black",
+            linewidths=0.35,
+            label=f"Synthetic (n={len(synth)})",
+            zorder=3,
+        )
+
+    if show_contours:
+        for pts, color in ((real, real_color), (synth, synth_color)):
+            if pts.ndim != 2 or pts.shape[0] < 8 or pts.shape[1] < 2:
+                continue
+            try:
+                if np.linalg.matrix_rank(np.cov(pts.T)) < 2:
+                    continue
+
+                kde          = gaussian_kde(pts.T)
+                x_min, x_max = pts[:, 0].min(), pts[:, 0].max()
+                y_min, y_max = pts[:, 1].min(), pts[:, 1].max()
+                pad_x        = 0.08 * (x_max - x_min + 1e-8)
+                pad_y        = 0.08 * (y_max - y_min + 1e-8)
+                xx, yy       = np.meshgrid(
+                    np.linspace(x_min - pad_x, x_max + pad_x, 80),
+                    np.linspace(y_min - pad_y, y_max + pad_y, 80),
+                )
+
+                zz = kde(np.vstack([xx.ravel(), yy.ravel()])).reshape(xx.shape)
+                ax.contour(xx, yy, zz, levels=4, colors=[color], alpha=0.45, linewidths=1.4, zorder=2)
+
+            except Exception:
+                continue
+
+    ax.set_xlabel(axis_labels[0] if len(axis_labels) > 0 else "Dim 1", fontsize=17, labelpad=10)
+    ax.set_ylabel(axis_labels[1] if len(axis_labels) > 1 else "Dim 2", fontsize=17, labelpad=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", fontsize=13, frameon=True)
+    ax.set_title(title, fontsize=20, fontweight="bold", pad=12)
+
+    fig.text(0.5, 0.01, note, ha="center", va="bottom", fontsize=12, style="italic", color="#444444")
+    _finalize_figure(fig, top=0.90)
+
+    return fig
